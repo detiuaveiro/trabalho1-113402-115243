@@ -10,8 +10,8 @@
 /// 2013, 2023
 
 // Student authors (fill in below):
-// NMec:  Name:
-// 
+// NMec:113402  Name:Hugo Santos Ribeiro
+// NMec:115243  Name:Ricardo Alexandre Antunes
 // 
 // 
 // Date:
