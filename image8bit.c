@@ -19,6 +19,7 @@
 
 #include "image8bit.h"
 
+#include <math.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -171,7 +172,16 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (width >= 0);
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
-  // Insert your code here!
+  Image image = (Image)malloc(sizeof(Image));
+  check(image != NULL, "Failed memory allocation");
+
+  image->width = width;
+  image->height = height;
+  image->maxval = maxval;
+  image->pixel = (uint8*) malloc(sizeof(uint8*)*height*width);
+  check(image != NULL, "Failed memory allocation");
+
+  return image;
 }
 
 /// Destroy the image pointed to by (*imgp).
@@ -181,7 +191,8 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 /// Should never fail, and should preserve global errno/errCause.
 void ImageDestroy(Image* imgp) { ///
   assert (imgp != NULL);
-  // Insert your code here!
+  free((*imgp)->pixel);
+  free(imgp);
 }
 
 
@@ -293,7 +304,17 @@ int ImageMaxval(Image img) { ///
 /// *max is set to the maximum.
 void ImageStats(Image img, uint8* min, uint8* max) { ///
   assert (img != NULL);
-  // Insert your code here!
+  int hei = img->height;
+  int wid = img->width;
+  uint8* pix = img->pixel;
+  for (int i = 0; i<hei*wid; i++){
+    if (pix[i] < *min){
+      *min = pix[i];
+    }
+    else if (pix[i] > *max){
+      *max = pix[i];
+    }
+  }
 }
 
 /// Check if pixel position (x,y) is inside img.
@@ -305,7 +326,9 @@ int ImageValidPos(Image img, int x, int y) { ///
 /// Check if rectangular area (x,y,w,h) is completely inside img.
 int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
-  // Insert your code here!
+  int hei = img->height;
+  int wid = img->width;
+  return (x + w < wid && y + h < hei);
 }
 
 /// Pixel get & set operations
@@ -319,8 +342,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 // This internal function is used in ImageGetPixel / ImageSetPixel. 
 // The returned index must satisfy (0 <= index < img->width*img->height)
 static inline int G(Image img, int x, int y) {
-  int index;
-  // Insert your code here!
+  int index = x + y*(img->height);
   assert (0 <= index && index < img->width*img->height);
   return index;
 }
@@ -355,7 +377,9 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 /// resulting in a "photographic negative" effect.
 void ImageNegative(Image img) { ///
   assert (img != NULL);
-  // Insert your code here!
+  for (int i = 0; i<img->height*img->width; i++){
+    img->pixel[i] = img->maxval - img->pixel[i];
+  }
 }
 
 /// Apply threshold to image.
@@ -363,7 +387,9 @@ void ImageNegative(Image img) { ///
 /// all pixels with level>=thr to white (maxval).
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
-  // Insert your code here!
+  for (int i = 0; i<img->height*img->width; i++){
+    img->pixel[i] = (img->pixel[i] < thr) ? 0 : img->maxval;
+  }
 }
 
 /// Brighten image by a factor.
@@ -372,8 +398,10 @@ void ImageThreshold(Image img, uint8 thr) { ///
 /// darken the image if factor<1.0.
 void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
-  // ? assert (factor >= 0.0);
-  // Insert your code here!
+  assert (factor >= 0.0);
+  for (int i = 0; i<img->height*img->width; i++){
+    img->pixel[i] = min(img->pixel[i] * factor, img->maxval);
+  }
 }
 
 
@@ -400,7 +428,14 @@ void ImageBrighten(Image img, double factor) { ///
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageRotate(Image img) { ///
   assert (img != NULL);
-  // Insert your code here!
+  int wid = img->width;
+  int hei = img->height; 
+  uint8* pixels;
+  Image rotated = ImageCreate(wid, hei, pixels);
+  for (int i = 0; i < wid*hei; i++){
+    rotated->pixel[i] = img->pixel[i+1 * hei - i/hei - 1];
+  }
+  return rotated;
 }
 
 /// Mirror an image = flip left-right.
@@ -412,7 +447,16 @@ Image ImageRotate(Image img) { ///
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageMirror(Image img) { ///
   assert (img != NULL);
-  // Insert your code here!
+  int wid = img->width;
+  int hei = img->height; 
+  uint8* pixels;
+  Image mirror = ImageCreate(wid, hei, pixels);
+  for (int x = 0; x<wid; x++){
+    for (int y = 0; y<hei; y++){
+      mirror->pixel[G(mirror, x, y)] = img->pixel[G(img, img->width - x, y)];
+    }
+  }
+  return mirror;
 }
 
 /// Crop a rectangular subimage from img.
@@ -430,7 +474,14 @@ Image ImageMirror(Image img) { ///
 Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   assert (ImageValidRect(img, x, y, w, h));
-  // Insert your code here!
+  uint8* pixels;
+  Image subimg = ImageCreate(w, h, pixels);
+  for (int xa = 0; xa<w; x++){
+    for (int ya = 0; ya<h; y++){
+      subimg->pixel[G(subimg, xa, ya)] = img->pixel[G(img, xa, ya)];
+    }
+  }
+  return subimg;
 }
 
 
