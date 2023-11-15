@@ -355,7 +355,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 // This internal function is used in ImageGetPixel / ImageSetPixel. 
 // The returned index must satisfy (0 <= index < img->width*img->height)
 static inline int G(Image img, int x, int y) {
-  int index = x + y*(img->height);
+  int index = x + y*(img->width);
   assert (0 <= index && index < img->width*img->height);
   return index;
 }
@@ -527,9 +527,9 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  for (int xa = x; xa<img2->width+x; xa++){
-    for (int ya = y; ya<img2->height+y; ya++){
-      img1->pixel[G(img1, xa, ya)] = ImageGetPixel(img2,xa,ya)*alpha + ImageGetPixel(img1, xa, ya)*(1-alpha);
+  for (int xa = 0; xa<img2->width; xa++){
+    for (int ya = 0; ya<img2->height; ya++){
+      img1->pixel[G(img1, xa + x, ya + y)] = ImageGetPixel(img2,xa,ya)*alpha + ImageGetPixel(img1, xa + x, ya + y)*(1-alpha) + 0.5;
     }
   }
 }
@@ -578,6 +578,24 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) { ///
-    return 0;
-}
+  int sum;
+  int count;
+  Image imgaux = ImageCreate(img->width+1, img->height+1, img->maxval);
+  ImagePaste(imgaux,0, 0, img);
+  for (int x = 0; x<img->width; x++){
+    for (int y = 0; y<img->height; y++){
+      sum = 0;
+      count = 0;
+      for (int xa = x - dx; xa <= x + dx; xa++){
+        for (int ya = y - dy; ya <= y + dy; ya++ ){
+          if (ImageValidPos(img, xa, ya)){
+            sum += ImageGetPixel(imgaux, xa, ya);
+            count += 1;
+          }
+        }
+      }
+      ImageSetPixel(img, x, y, (sum + count/2)/count);
+      }
+    }
+  }
 
