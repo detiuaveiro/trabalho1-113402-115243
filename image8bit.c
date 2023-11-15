@@ -433,7 +433,7 @@ Image ImageRotate(Image img) { ///
   assert (img != NULL);
   int wid = img->width;
   int hei = img->height; 
-  uint8 maxvalu;
+  uint8 maxvalu = img->maxval;
   Image rotated = ImageCreate(wid, hei, maxvalu);
   for (int i = 0; i < wid*hei; i++){
     rotated->pixel[i] = img->pixel[i+1 * hei - i/hei - 1];
@@ -452,7 +452,7 @@ Image ImageMirror(Image img) { ///
   assert (img != NULL);
   int wid = img->width;
   int hei = img->height; 
-  uint8 maxvalu;
+  uint8 maxvalu = img->maxval;
   Image mirror = ImageCreate(wid, hei, maxvalu);
   for (int x = 0; x<wid; x++){
     for (int y = 0; y<hei; y++){
@@ -477,7 +477,7 @@ Image ImageMirror(Image img) { ///
 Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   assert (ImageValidRect(img, x, y, w, h));
-  uint8 maxvalu;
+  uint8 maxvalu = img->maxval;
   Image subimg = ImageCreate(w, h, maxvalu);
   for (int xa = 0; xa<w; x++){
     for (int ya = 0; ya<h; y++){
