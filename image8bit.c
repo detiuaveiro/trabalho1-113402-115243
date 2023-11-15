@@ -381,7 +381,7 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 void ImageNegative(Image img) { ///
   assert (img != NULL);
   for (int i = 0; i<img->height*img->width; i++){
-    img->pixel[i] = img->maxval - img->pixel[i];
+    img->pixel[i] = PixMax - img->pixel[i];
   }
 }
 
@@ -433,8 +433,8 @@ Image ImageRotate(Image img) { ///
   assert (img != NULL);
   int wid = img->width;
   int hei = img->height; 
-  uint8* pixels;
-  Image rotated = ImageCreate(wid, hei, pixels);
+  uint8 maxvalu;
+  Image rotated = ImageCreate(wid, hei, maxvalu);
   for (int i = 0; i < wid*hei; i++){
     rotated->pixel[i] = img->pixel[i+1 * hei - i/hei - 1];
   }
@@ -452,8 +452,8 @@ Image ImageMirror(Image img) { ///
   assert (img != NULL);
   int wid = img->width;
   int hei = img->height; 
-  uint8* pixels;
-  Image mirror = ImageCreate(wid, hei, pixels);
+  uint8 maxvalu;
+  Image mirror = ImageCreate(wid, hei, maxvalu);
   for (int x = 0; x<wid; x++){
     for (int y = 0; y<hei; y++){
       mirror->pixel[G(mirror, x, y)] = img->pixel[G(img, img->width - x, y)];
@@ -477,8 +477,8 @@ Image ImageMirror(Image img) { ///
 Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   assert (ImageValidRect(img, x, y, w, h));
-  uint8* pixels;
-  Image subimg = ImageCreate(w, h, pixels);
+  uint8 maxvalu;
+  Image subimg = ImageCreate(w, h, maxvalu);
   for (int xa = 0; xa<w; x++){
     for (int ya = 0; ya<h; y++){
       subimg->pixel[G(subimg, xa, ya)] = img->pixel[G(img, xa, ya)];
