@@ -176,15 +176,25 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
   Image image = (Image)malloc(sizeof(Image));
-  check(image != NULL, "Failed memory allocation");
+  if(check(image != NULL, "Failed memory allocation")){;
 
-  image->width = width;
-  image->height = height;
-  image->maxval = maxval;
-  image->pixel = (uint8*) malloc(sizeof(uint8*)*height*width);
-  check(image != NULL, "Failed memory allocation");
-
-  return image;
+    image->width = width;
+    image->height = height;
+    image->maxval = maxval;
+    image->pixel = (uint8*) malloc(sizeof(uint8*)*height*width);
+    if(check(image != NULL, "Failed memory allocation")){
+      return image;
+    }
+    else{
+      free(image->pixel);
+      free(image);
+      return NULL;
+    }
+  }
+  else{
+    free(image);
+    return NULL;
+  }
 }
 
 /// Destroy the image pointed to by (*imgp).
@@ -195,7 +205,7 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 void ImageDestroy(Image* imgp) { ///
   assert (imgp != NULL);
   free((*imgp)->pixel);
-  free(imgp);
+  free((*imgp));
 }
 
 
@@ -381,7 +391,7 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 void ImageNegative(Image img) { ///
   assert (img != NULL);
   for (int i = 0; i<img->height*img->width; i++){
-    img->pixel[i] = PixMax - img->pixel[i];
+    img->pixel[i] = img->maxval - img->pixel[i];
   }
 }
 
@@ -403,7 +413,7 @@ void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
   assert (factor >= 0.0);
   for (int i = 0; i<img->height*img->width; i++){
-    img->pixel[i] = min(img->pixel[i] * factor, img->maxval);
+    img->pixel[i] = min((uint8)img->pixel[i] * factor + 0.5, img->maxval);
   }
 }
 
@@ -435,8 +445,10 @@ Image ImageRotate(Image img) { ///
   int hei = img->height; 
   uint8 maxvalu = img->maxval;
   Image rotated = ImageCreate(wid, hei, maxvalu);
-  for (int i = 0; i < wid*hei; i++){
-    rotated->pixel[i] = img->pixel[i+1 * hei - i/hei - 1];
+  for (int x = 0; x<wid; x++){
+    for (int y = 0; y<hei; y++){
+      rotated->pixel[G(rotated, x, y)] = img->pixel[G(img, img->width - 1 - y, x)];
+    }
   }
   return rotated;
 }
@@ -456,7 +468,7 @@ Image ImageMirror(Image img) { ///
   Image mirror = ImageCreate(wid, hei, maxvalu);
   for (int x = 0; x<wid; x++){
     for (int y = 0; y<hei; y++){
-      mirror->pixel[G(mirror, x, y)] = img->pixel[G(img, img->width - x, y)];
+      mirror->pixel[G(mirror, x, y)] = img->pixel[G(img, img->width - 1 - x, y)];
     }
   }
   return mirror;
@@ -479,9 +491,9 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (ImageValidRect(img, x, y, w, h));
   uint8 maxvalu = img->maxval;
   Image subimg = ImageCreate(w, h, maxvalu);
-  for (int xa = 0; xa<w; x++){
-    for (int ya = 0; ya<h; y++){
-      subimg->pixel[G(subimg, xa, ya)] = img->pixel[G(img, xa, ya)];
+  for (int xa = 0; xa<w; xa++){
+    for (int ya = 0; ya<h; ya++){
+      subimg->pixel[G(subimg, xa, ya)] = img->pixel[G(img, xa+x, ya+y)];
     }
   }
   return subimg;
@@ -498,7 +510,11 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  // Insert your code here!
+  for (int xa = 0; xa<img2->width; xa++){
+    for (int ya = 0; ya<img2->height; ya++){
+      img1->pixel[G(img1, xa + x, ya + y)] = img2->pixel[G(img2,xa,ya)];
+    }
+  }
 }
 
 /// Blend an image into a larger image.
@@ -511,7 +527,11 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  // Insert your code here!
+  for (int xa = x; xa<img2->width+x; xa++){
+    for (int ya = y; ya<img2->height+y; ya++){
+      img1->pixel[G(img1, xa, ya)] = ImageGetPixel(img2,xa,ya)*alpha + ImageGetPixel(img1, xa, ya)*(1-alpha);
+    }
+  }
 }
 
 /// Compare an image to a subimage of a larger image.
@@ -521,7 +541,14 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
-  // Insert your code here!
+  for (int xa = x; xa<img2->width+x; xa++){
+    for (int ya = y; ya<img2->height+y; ya++){
+      if (ImageGetPixel(img2,xa,ya) != ImageGetPixel(img1, xa, ya)){
+        return 0;
+      }
+    }
+  }
+  return 1;
 }
 
 /// Locate a subimage inside another image.
@@ -531,7 +558,16 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
 int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
-  // Insert your code here!
+  for (int xa = 0; xa<img1->width; xa++){
+    for (int ya = 0; ya<img1->height - img2->height; ya++){
+      if (ImageMatchSubImage(img1, xa, ya, img2)){
+        *px = xa;
+        *py = ya;
+        return 1;
+      }
+    }
+  }
+  return 0;
 }
 
 
@@ -542,6 +578,6 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) { ///
-  // Insert your code here!
+    return 0;
 }
 
