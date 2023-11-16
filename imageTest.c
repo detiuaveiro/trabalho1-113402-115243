@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   }
   InstrPrint(); // to print instrumentation
 
-  /*
+  
   // Try changing the behaviour of the program by commenting/uncommenting
   // the appropriate lines.
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
   ImageDestroy(&img1);
   ImageDestroy(&img2);
   
-  */
+
  return 0;
 }
 
