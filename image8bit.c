@@ -392,6 +392,7 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 void ImageNegative(Image img) { ///
   assert (img != NULL);
   for (int i = 0; i<img->height*img->width; i++){
+    PIXMEM++;
     img->pixel[i] = img->maxval - img->pixel[i];
   }
 }
@@ -402,6 +403,7 @@ void ImageNegative(Image img) { ///
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
   for (int i = 0; i<img->height*img->width; i++){
+    PIXMEM++;
     img->pixel[i] = (img->pixel[i] < thr) ? 0 : img->maxval;
   }
 }
@@ -414,6 +416,7 @@ void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
   assert (factor >= 0.0);
   for (int i = 0; i<img->height*img->width; i++){
+    PIXMEM++;
     img->pixel[i] = min((uint8)img->pixel[i] * factor + 0.5, img->maxval);
   }
 }
@@ -445,9 +448,9 @@ Image ImageRotate(Image img) { ///
   int wid = img->width;
   int hei = img->height; 
   uint8 maxvalu = img->maxval;
-  Image rotated = ImageCreate(wid, hei, maxvalu);
-  for (int x = 0; x<wid; x++){
-    for (int y = 0; y<hei; y++){
+  Image rotated = ImageCreate(hei, wid, maxvalu);
+  for (int x = 0; x<hei; x++){
+    for (int y = 0; y<wid; y++){
       rotated->pixel[G(rotated, x, y)] = img->pixel[G(img, img->width - 1 - y, x)];
     }
   }
@@ -542,9 +545,9 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
-  for (int xa = x; xa<img2->width+x; xa++){
-    for (int ya = y; ya<img2->height+y; ya++){
-      if (ImageGetPixel(img2,xa,ya) != ImageGetPixel(img1, xa, ya)){
+  for (int xa = 0; xa<img2->width; xa++){
+    for (int ya = 0; ya<img2->height; ya++){
+      if (ImageGetPixel(img2,xa,ya) != ImageGetPixel(img1, xa+x, ya+y)){
         return 0;
       }
     }
@@ -602,14 +605,7 @@ void ImageOldBlur(Image img, int dx, int dy) {
 
 void ImageBlur(Image img, int dx, int dy) {
   int* valuesum;
-  int blurval;
-  int xstart;
-  int xend;
-  int ystart;
-  int yend;
-  int xlen;
-  int ylen;
-  int count;
+  int blurval, xstart, xend, ystart, yend, xlen, ylen, count;
   valuesum = (uint8*) malloc(sizeof(uint8*) * img->height * img->width);
   for (int x = 0; x < img->width; x++){
     for (int y = 0; y < img->height; y++){
