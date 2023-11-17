@@ -33,12 +33,38 @@ int main(int argc, char* argv[]) {
     error(2, errno, "Loading %s: %s", argv[1], ImageErrMsg());
   }
   InstrPrint(); // to print instrumentation
+  InstrReset();
+  printf("\n# CROP image\n");
+  Image img2 = ImageCrop(img1, ImageWidth(img1)/2, ImageHeight(img1)/2, ImageWidth(img1)/4, ImageHeight(img1)/4);
+  InstrPrint();
+
+  Image cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageWidth(img2));
+  Image cp2 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageWidth(img2));
+
+  InstrReset();
+  printf("\n# BLUR image (normal - 7x7)\n");
+  ImageOldBlur(cp1, 7, 7);
+  InstrPrint();
+
+  InstrReset();
+  printf("\n# BLUR image (normal - 15x15)\n");
+  ImageOldBlur(cp1, 15, 15);
+  InstrPrint();
+
+  InstrReset();
+  printf("\n# BLUR image (summation table - 7x7)\n");
+  ImageBlur(cp1, 7, 7);
+  InstrPrint();
+
+  InstrReset();
+  printf("\n# BLUR image (summation table - 15x15)\n");
+  ImageBlur(cp1, 15, 15);
+  InstrPrint();
 
   
   // Try changing the behaviour of the program by commenting/uncommenting
   // the appropriate lines.
 
-  Image img2 = ImageCrop(img1, ImageWidth(img1)/2, ImageHeight(img1)/2, ImageWidth(img1)/4, ImageHeight(img1)/4);
   int px, py;
   int output = ImageLocateSubImage(img1, &px, &py, img2);
   printf("%d %d %d\n", output, px, py);

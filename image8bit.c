@@ -150,13 +150,15 @@ static int check(int condition, const char* failmsg) {
 /// Currently, simply calibrate instrumentation and set names of counters.
 void ImageInit(void) { ///
   InstrCalibrate();
-  InstrName[0] = "pixmem";  // InstrCount[0] will count pixel array acesses
+  InstrName[0] = "pixmem"; // InstrCount[0] will count pixel array acesses
+  InstrName[1] = "pixcomp"; // InstrCount[1] will count pixel array comparisons
   // Name other counters here...
   
 }
 
 // Macros to simplify accessing instrumentation counters:
 #define PIXMEM InstrCount[0]
+#define PIXCOMP InstrCount[1]
 // Add more macros here...
 
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
@@ -342,7 +344,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   int hei = img->height;
   int wid = img->width;
-  return (x + w < wid && y + h < hei);
+  return (x + w <= wid && y + h <= hei);
 }
 
 /// Pixel get & set operations
@@ -391,9 +393,10 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 /// resulting in a "photographic negative" effect.
 void ImageNegative(Image img) { ///
   assert (img != NULL);
-  for (int i = 0; i<img->height*img->width; i++){
-    PIXMEM++;
-    img->pixel[i] = img->maxval - img->pixel[i];
+  for (int x = 0; x<img->width; x++){
+    for (int y = 0; y<img->height; y++){
+      ImageSetPixel(img, x, y, img->maxval - ImageGetPixel(img, x, y));
+    }
   }
 }
 
@@ -402,9 +405,10 @@ void ImageNegative(Image img) { ///
 /// all pixels with level>=thr to white (maxval).
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
-  for (int i = 0; i<img->height*img->width; i++){
-    PIXMEM++;
-    img->pixel[i] = (img->pixel[i] < thr) ? 0 : img->maxval;
+  for (int x = 0; x<img->width; x++){
+    for (int y = 0; y<img->height; y++){
+      ImageSetPixel(img, x, y, (ImageGetPixel(img, x, y) < thr) ? 0 : img->maxval);
+    }
   }
 }
 
@@ -415,9 +419,10 @@ void ImageThreshold(Image img, uint8 thr) { ///
 void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
   assert (factor >= 0.0);
-  for (int i = 0; i<img->height*img->width; i++){
-    PIXMEM++;
-    img->pixel[i] = min((uint8)img->pixel[i] * factor + 0.5, img->maxval);
+  for (int x = 0; x<img->width; x++){
+    for (int y = 0; y<img->height; y++){
+      ImageSetPixel(img, x, y, min((uint8)ImageGetPixel(img, x, y) * factor + 0.5, img->maxval));
+    }
   }
 }
 
@@ -451,7 +456,7 @@ Image ImageRotate(Image img) { ///
   Image rotated = ImageCreate(hei, wid, maxvalu);
   for (int x = 0; x<hei; x++){
     for (int y = 0; y<wid; y++){
-      rotated->pixel[G(rotated, x, y)] = img->pixel[G(img, img->width - 1 - y, x)];
+      ImageSetPixel(rotated, x, y, ImageGetPixel(img, img->width - 1 - y, x));
     }
   }
   return rotated;
@@ -472,7 +477,7 @@ Image ImageMirror(Image img) { ///
   Image mirror = ImageCreate(wid, hei, maxvalu);
   for (int x = 0; x<wid; x++){
     for (int y = 0; y<hei; y++){
-      mirror->pixel[G(mirror, x, y)] = img->pixel[G(img, img->width - 1 - x, y)];
+      ImageSetPixel(mirror, x, y, ImageGetPixel(img, img->width - 1 - x, y));
     }
   }
   return mirror;
@@ -497,7 +502,7 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   Image subimg = ImageCreate(w, h, maxvalu);
   for (int xa = 0; xa<w; xa++){
     for (int ya = 0; ya<h; ya++){
-      subimg->pixel[G(subimg, xa, ya)] = img->pixel[G(img, xa+x, ya+y)];
+      ImageSetPixel(subimg, xa, ya, ImageGetPixel(img, xa + x, ya + y));
     }
   }
   return subimg;
@@ -516,7 +521,7 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   for (int xa = 0; xa<img2->width; xa++){
     for (int ya = 0; ya<img2->height; ya++){
-      img1->pixel[G(img1, xa + x, ya + y)] = img2->pixel[G(img2,xa,ya)];
+      ImageSetPixel(img1, xa + x, ya + y, ImageGetPixel(img2, xa, ya));
     }
   }
 }
@@ -533,6 +538,7 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   for (int xa = 0; xa<img2->width; xa++){
     for (int ya = 0; ya<img2->height; ya++){
+      PIXMEM++;
       img1->pixel[G(img1, xa + x, ya + y)] = ImageGetPixel(img2,xa,ya)*alpha + ImageGetPixel(img1, xa + x, ya + y)*(1-alpha) + 0.5;
     }
   }
@@ -547,6 +553,7 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (ImageValidPos(img1, x, y));
   for (int xa = 0; xa<img2->width; xa++){
     for (int ya = 0; ya<img2->height; ya++){
+      PIXCOMP++;
       if (ImageGetPixel(img2,xa,ya) != ImageGetPixel(img1, xa+x, ya+y)){
         return 0;
       }
@@ -564,6 +571,7 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   assert (img2 != NULL);
   for (int xa = 0; xa<img1->width - img2->width + 1 ; xa++){
     for (int ya = 0; ya<img1->height - img2->height + 1; ya++){
+      PIXCOMP++;
       if (ImageMatchSubImage(img1, xa, ya, img2)){
         *px = xa;
         *py = ya;
@@ -592,6 +600,7 @@ void ImageOldBlur(Image img, int dx, int dy) {
       count = 0;
       for (int xa = x - dx; xa <= x + dx; xa++){
         for (int ya = y - dy; ya <= y + dy; ya++ ){
+          PIXCOMP++;
           if (ImageValidPos(img, xa, ya)){
             sum += ImageGetPixel(imgaux, xa, ya);
             count += 1;
