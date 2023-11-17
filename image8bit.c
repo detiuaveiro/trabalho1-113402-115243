@@ -24,6 +24,7 @@
 
 #include <math.h>
 #include <assert.h>
+#define NDEBUG
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -324,7 +325,6 @@ void ImageStats(Image img, uint8* min, uint8* max) { ///
   *max = ImageGetPixel(img, 0, 0); //setting max to the first pixel
   int hei = img->height;
   int wid = img->width;
-  uint8* pix = img->pixel;
   for (int x = 0; x < wid; x++){
     for (int y = 0; y < hei; y++){
       uint8 pix = ImageGetPixel(img, x, y); //saving the value in pix so that we don't need to constantly access it
