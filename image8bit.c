@@ -178,23 +178,23 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (width >= 0);
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
-  Image image = (Image)malloc(sizeof(Image));
-  if(check(image != NULL, "Failed memory allocation")){
+  Image image = (Image)malloc(sizeof(Image)); //allocated memory for image
+  if(check(image != NULL, "Failed memory allocation")){ //checks if allocation was successful
 
     image->width = width;
     image->height = height;
     image->maxval = maxval;
-    image->pixel = (uint8*) malloc(sizeof(uint8*)*height*width);
-    if(check(image != NULL, "Failed memory allocation")){
+    image->pixel = (uint8*) malloc(sizeof(uint8*)*height*width); //allocated memory for pixels (initialization)
+    if(check(image != NULL, "Failed memory allocation")){ //checks if allocation was successful
       return image;
     }
-    else{
+    else{ //frees memory if unsuccessful
       free(image->pixel);
       free(image);
       return NULL;
     }
   }
-  else{
+  else{ //frees memory if unsuccessful (pixel not created yet)
     free(image);
     return NULL;
   }
@@ -205,7 +205,7 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 /// If (*imgp)==NULL, no operation is performed.
 /// Ensures: (*imgp)==NULL.
 /// Should never fail, and should preserve global errno/errCause.
-void ImageDestroy(Image* imgp) { ///
+void ImageDestroy(Image* imgp) { ///frees everything
   assert (imgp != NULL);
   free((*imgp)->pixel);
   free((*imgp));
@@ -619,11 +619,13 @@ void ImageBlur(Image img, int dx, int dy) {
   if(check(valuesum != NULL, "Failed memory allocation")){
     for (int x = 0; x < img->width; x++){
       for (int y = 0; y < img->height; y++){
+        PIXCOMP += 4;
         valuesum[G(img, x, y)] = ImageGetPixel(img, x, y) + ((x > 0) ? valuesum[G(img, x-1, y)] : 0) + ((y > 0) ? valuesum[G(img, x, y-1)] : 0) - ((x > 0 && y > 0) ? valuesum[G(img, x-1, y-1)] : 0);
       }
     }
     for (int x = 0; x < img->width; x++){
       for (int y = 0; y < img->height; y++){
+        PIXCOMP += 8;
         xstart = max(x - dx, 0);
         ystart = max(y - dy, 0);
         xend = min(x + dx, img->width-1);
