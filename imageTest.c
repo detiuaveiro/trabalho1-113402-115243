@@ -25,20 +25,20 @@ int main(int argc, char* argv[]) {
 
   ImageInit();
   
-  printf("# LOAD image");
+  printf("# LOAD image\n");
   InstrReset(); // to reset instrumentation
   Image img1 = ImageLoad(argv[1]);
-  Image img2 = ImageLoad(argv[2]);
+  // Image img2 = ImageLoad(argv[2]);
   if (img1 == NULL) {
     error(2, errno, "Loading %s: %s", argv[1], ImageErrMsg());
   }
   InstrPrint(); // to print instrumentation
 
-  /*
+  
   // Try changing the behaviour of the program by commenting/uncommenting
   // the appropriate lines.
 
-  //img2 = ImageCrop(img1, ImageWidth(img1)/4, ImageHeight(img1)/4, ImageWidth(img1)/2, ImageHeight(img1)/2);
+  // img2 = ImageCrop(img1, ImageWidth(img1)/4, ImageHeight(img1)/4, ImageWidth(img1)/2, ImageHeight(img1)/2);
   Image img2 = ImageRotate(img1);
   if (img2 == NULL) {
     error(2, errno, "Rotating img2: %s", ImageErrMsg());
@@ -53,9 +53,8 @@ int main(int argc, char* argv[]) {
   }
 
   ImageDestroy(&img1);
-  ImageDestroy(&img2);
-  
-  */
+  ImageDestroy(&img2);  
+
  return 0;
 }
 
