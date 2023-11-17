@@ -22,6 +22,7 @@
 #define PIXCOMP InstrCount[1]
 
 int main(int argc, char* argv[]) {
+  char* str[100];
   /*
   if (argc != 3) {
     error(1, 0, "Usage: imageTest input.pgm output.pgm");
@@ -29,6 +30,7 @@ int main(int argc, char* argv[]) {
   */
 
   for (int i = 1; i < argc; i++){
+
     ImageInit();
     
     printf("\n# LOAD NEW image : %s\n", argv[i]);
@@ -41,17 +43,28 @@ int main(int argc, char* argv[]) {
     }
     InstrPrint(); // to print instrumentation
     Image cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
-    Image cp2 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
 
     InstrReset();
     printf("\n# NORMAL BLUR image (size: %d - window 7x7)\n", n);
     ImageOldBlur(cp1, 7, 7);
     InstrPrint();
 
+    sprintf(str,"tests/nblur%d_7x7.pgm", i);
+    if (ImageSave(cp1, str) == 0) {
+      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
+    }
+    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
+
     InstrReset();
     printf("\n# NORMAL BLUR image (size: %d - window 15x15)\n", n);
     ImageOldBlur(cp1, 15, 15);
     InstrPrint();
+
+    sprintf(str,"tests/nblur%d_15x15.pgm", i);
+    if (ImageSave(cp1, str) == 0) {
+      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
+    }
+    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
 
     InstrReset();
     printf("\n# NORMAL BLUR image (size: %d - window 50x50)\n", n);
@@ -59,26 +72,50 @@ int main(int argc, char* argv[]) {
     InstrPrint();
 
 
+    sprintf(str,"tests/nblur%d_50x50.pgm", i);
+    if (ImageSave(cp1, str) == 0) {
+      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
+    }
+    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
+
+
     InstrReset();
     printf("\n# SUMMATION TABLE BLUR image (size: %d - window 7x7)\n", n);
     ImageBlur(cp1, 7, 7);
     InstrPrint();
+
+    sprintf(str,"tests/stblur%d_7x7.pgm", i);
+    if (ImageSave(cp1, str) == 0) {
+      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
+    }
+    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
 
     InstrReset();
     printf("\n# SUMMATION TABLE BLUR image (size: %d- window 15x15)\n", n);
     ImageBlur(cp1, 15, 15);
     InstrPrint();
 
+    sprintf(str,"tests/stblur%d_15x15.pgm", i);
+    if (ImageSave(cp1, str) == 0) {
+      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
+    }
+    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
+
     InstrReset();
     printf("\n# SUMMATION TABLE BLUR image (size: %d- window 50x50)\n", n);
     ImageBlur(cp1, 50, 50);
     InstrPrint();
+
+    sprintf(str,"tests/stblur%d_50x50.pgm", i);
+    if (ImageSave(cp1, str) == 0) {
+      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
+    }
+    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
     InstrReset();
     printf("\n------\n");
 
     ImageDestroy(&img1);
     ImageDestroy(&cp1);
-    ImageDestroy(&cp2);
   }
 
 

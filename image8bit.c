@@ -345,7 +345,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   int hei = img->height;
   int wid = img->width;
-  return (x + w <= wid && y + h <= hei); //x + w must meet 
+  return (x + w <= wid && y + h <= hei); //x + w must be at most width / y + h must be at most height
 }
 
 /// Pixel get & set operations
@@ -359,6 +359,11 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 // This internal function is used in ImageGetPixel / ImageSetPixel. 
 // The returned index must satisfy (0 <= index < img->width*img->height)
 static inline int G(Image img, int x, int y) {
+  /*
+  The image begins in (0,0) and goes sideways as in (1,0), (2,0), (3,0) etc until it reaches (width - 1, 0)
+  Once it switches lines to (0, 1) the value of the index becomes width - 1 + 1 = width.
+  The same process repeats so the value of the index is x + y*width
+  */
   int index = x + y*(img->width);
   assert (0 <= index && index < img->width*img->height);
   return index;
@@ -396,7 +401,7 @@ void ImageNegative(Image img) { ///
   assert (img != NULL);
   for (int x = 0; x<img->width; x++){
     for (int y = 0; y<img->height; y++){
-      ImageSetPixel(img, x, y, img->maxval - ImageGetPixel(img, x, y));
+      ImageSetPixel(img, x, y, img->maxval - ImageGetPixel(img, x, y)); //maxval is white, therefore doing this operation sets the pixel to the other side of the "brightness" spectrum
     }
   }
 }
@@ -408,7 +413,7 @@ void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
   for (int x = 0; x<img->width; x++){
     for (int y = 0; y<img->height; y++){
-      ImageSetPixel(img, x, y, (ImageGetPixel(img, x, y) < thr) ? 0 : img->maxval);
+      ImageSetPixel(img, x, y, (ImageGetPixel(img, x, y) < thr) ? 0 : img->maxval); //sets the value to 0 if the original value is below thr, otherwise maxval
     }
   }
 }
@@ -419,10 +424,9 @@ void ImageThreshold(Image img, uint8 thr) { ///
 /// darken the image if factor<1.0.
 void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
-  assert (factor >= 0.0);
   for (int x = 0; x<img->width; x++){
     for (int y = 0; y<img->height; y++){
-      ImageSetPixel(img, x, y, MIN((uint8)ImageGetPixel(img, x, y) * factor + 0.5, img->maxval));
+      ImageSetPixel(img, x, y, MIN((uint8)ImageGetPixel(img, x, y) * factor + 0.5, img->maxval)); //a negative factor also negates the image while applying the brightening factor. 0.5 is added for rounding purposes (the value is floored by default)
     }
   }
 }
@@ -616,12 +620,12 @@ void ImageOldBlur(Image img, int dx, int dy) {
 void ImageBlur(Image img, int dx, int dy) {
   int* valuesum;
   int blurval, xstart, xend, ystart, yend, xlen, ylen, count;
-  valuesum = (uint8*) malloc(sizeof(uint8*) * img->height * img->width);
+  valuesum = (int*) malloc(sizeof(int*) * img->height * img->width);
   if(check(valuesum != NULL, "Failed memory allocation")){
     for (int x = 0; x < img->width; x++){
       for (int y = 0; y < img->height; y++){
         PIXCOMP += 4;
-        valuesum[G(img, x, y)] = ImageGetPixel(img, x, y) + ((x > 0) ? valuesum[G(img, x-1, y)] : 0) + ((y > 0) ? valuesum[G(img, x, y-1)] : 0) - ((x > 0 && y > 0) ? valuesum[G(img, x-1, y-1)] : 0);
+        valuesum[G(img, x, y)] = (int)ImageGetPixel(img, x, y) + ((x > 0) ? valuesum[G(img, x-1, y)] : 0) + ((y > 0) ? valuesum[G(img, x, y-1)] : 0) - ((x > 0 && y > 0) ? valuesum[G(img, x-1, y-1)] : 0);
       }
     }
     for (int x = 0; x < img->width; x++){
