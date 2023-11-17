@@ -145,6 +145,7 @@ static int check(int condition, const char* failmsg) {
 }
 
 
+
 /// Init Image library.  (Call once!)
 /// Currently, simply calibrate instrumentation and set names of counters.
 void ImageInit(void) { ///
@@ -577,7 +578,7 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
-void ImageBlur(Image img, int dx, int dy) { ///
+void ImageOldBlur(Image img, int dx, int dy) { 
   int sum;
   int count;
   Image imgaux = ImageCreate(img->width+1, img->height+1, img->maxval);
@@ -595,7 +596,38 @@ void ImageBlur(Image img, int dx, int dy) { ///
         }
       }
       ImageSetPixel(img, x, y, (sum + count/2)/count);
-      }
     }
   }
+}
 
+void ImageBlur(Image img, int dx, int dy) {
+  int* valuesum;
+  int blurval;
+  int xstart;
+  int xend;
+  int ystart;
+  int yend;
+  int xlen;
+  int ylen;
+  int count;
+  valuesum = (uint8*) malloc(sizeof(uint8*) * img->height * img->width);
+  for (int x = 0; x < img->width; x++){
+    for (int y = 0; y < img->height; y++){
+      valuesum[G(img, x, y)] = ImageGetPixel(img, x, y) + ((x > 0) ? valuesum[G(img, x-1, y)] : 0) + ((y > 0) ? valuesum[G(img, x, y-1)] : 0) - ((x > 0 && y > 0) ? valuesum[G(img, x-1, y-1)] : 0);
+    }
+  }
+  for (int x = 0; x < img->width; x++){
+    for (int y = 0; y < img->height; y++){
+      xstart = max(x - dx, 0);
+      ystart = max(y - dy, 0);
+      xend = min(x + dx, img->width-1);
+      yend = min(y + dy, img->height-1);
+      xlen = xend - xstart + 1;
+      ylen = yend - ystart + 1;
+      count = ylen * xlen;
+      blurval = valuesum[G(img, xend, yend)] - ((ystart > 0) ? valuesum[G(img, xend, ystart - 1)] : 0) - ((xstart > 0) ? valuesum[G(img, xstart - 1, yend)] : 0) + ((xstart > 0 && ystart > 0) ? valuesum[G(img, xstart - 1, ystart - 1)] : 0);
+      blurval = (blurval + count / 2)/count;
+      ImageSetPixel(img, x, y, blurval);
+    }
+  }
+}
