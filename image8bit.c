@@ -17,8 +17,8 @@
 // Date:
 //
 
-#define min(X, Y) (((X) < (Y)) ? (X) : (Y))
-#define max(X, Y) (((X) > (Y)) ? (X) : (Y))
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
 #include "image8bit.h"
 
@@ -320,15 +320,16 @@ int ImageMaxval(Image img) { ///
 /// *max is set to the maximum.
 void ImageStats(Image img, uint8* min, uint8* max) { ///
   assert (img != NULL);
+  *min = ImageGetPixel(img, 0, 0); //setting min to the first pixel
+  *max = ImageGetPixel(img, 0, 0); //setting max to the first pixel
   int hei = img->height;
   int wid = img->width;
   uint8* pix = img->pixel;
-  for (int i = 0; i<hei*wid; i++){
-    if (pix[i] < *min){
-      *min = pix[i];
-    }
-    else if (pix[i] > *max){
-      *max = pix[i];
+  for (int x = 0; x < wid; x++){
+    for (int y = 0; y < hei; y++){
+      uint8 pix = ImageGetPixel(img, x, y); //saving the value in pix so that we don't need to constantly access it
+      *min = MIN(*min, pix); //updating *min accordingly
+      *max = MAX(*max, pix); //updating *max accordingly
     }
   }
 }
@@ -336,7 +337,7 @@ void ImageStats(Image img, uint8* min, uint8* max) { ///
 /// Check if pixel position (x,y) is inside img.
 int ImageValidPos(Image img, int x, int y) { ///
   assert (img != NULL);
-  return (0 <= x && x < img->width) && (0 <= y && y < img->height);
+  return (0 <= x && x < img->width) && (0 <= y && y < img->height); //x must be between 0 and width - 1 (inclusive) / y must be between 0 and height - 1 (inclusive)
 }
 
 /// Check if rectangular area (x,y,w,h) is completely inside img.
@@ -344,7 +345,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   int hei = img->height;
   int wid = img->width;
-  return (x + w <= wid && y + h <= hei);
+  return (x + w <= wid && y + h <= hei); //x + w must meet 
 }
 
 /// Pixel get & set operations
@@ -421,7 +422,7 @@ void ImageBrighten(Image img, double factor) { ///
   assert (factor >= 0.0);
   for (int x = 0; x<img->width; x++){
     for (int y = 0; y<img->height; y++){
-      ImageSetPixel(img, x, y, min((uint8)ImageGetPixel(img, x, y) * factor + 0.5, img->maxval));
+      ImageSetPixel(img, x, y, MIN((uint8)ImageGetPixel(img, x, y) * factor + 0.5, img->maxval));
     }
   }
 }
@@ -626,10 +627,10 @@ void ImageBlur(Image img, int dx, int dy) {
     for (int x = 0; x < img->width; x++){
       for (int y = 0; y < img->height; y++){
         PIXCOMP += 8;
-        xstart = max(x - dx, 0);
-        ystart = max(y - dy, 0);
-        xend = min(x + dx, img->width-1);
-        yend = min(y + dy, img->height-1);
+        xstart = MAX(x - dx, 0);
+        ystart = MAX(y - dy, 0);
+        xend = MIN(x + dx, img->width-1);
+        yend = MIN(y + dy, img->height-1);
         xlen = xend - xstart + 1;
         ylen = yend - ystart + 1;
         count = ylen * xlen;
