@@ -458,10 +458,10 @@ Image ImageRotate(Image img) { ///
   int wid = img->width;
   int hei = img->height; 
   uint8 maxvalu = img->maxval;
-  Image rotated = ImageCreate(hei, wid, maxvalu);
+  Image rotated = ImageCreate(hei, wid, maxvalu); // in a 400x200 picture, the rotated version will be 200x400
   for (int x = 0; x<hei; x++){
     for (int y = 0; y<wid; y++){
-      ImageSetPixel(rotated, x, y, ImageGetPixel(img, img->width - 1 - y, x));
+      ImageSetPixel(rotated, x, y, ImageGetPixel(img, img->width - 1 - y, x)); // anti-clockwise rotation
     }
   }
   return rotated;
@@ -482,7 +482,7 @@ Image ImageMirror(Image img) { ///
   Image mirror = ImageCreate(wid, hei, maxvalu);
   for (int x = 0; x<wid; x++){
     for (int y = 0; y<hei; y++){
-      ImageSetPixel(mirror, x, y, ImageGetPixel(img, img->width - 1 - x, y));
+      ImageSetPixel(mirror, x, y, ImageGetPixel(img, img->width - 1 - x, y)); //mirrored image
     }
   }
   return mirror;
@@ -506,8 +506,8 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   uint8 maxvalu = img->maxval;
   Image subimg = ImageCreate(w, h, maxvalu);
   for (int xa = 0; xa<w; xa++){
-    for (int ya = 0; ya<h; ya++){
-      ImageSetPixel(subimg, xa, ya, ImageGetPixel(img, xa + x, ya + y));
+    for (int ya = 0; ya<h; ya++){ //iterates through the pixels of the cropped image
+      ImageSetPixel(subimg, xa, ya, ImageGetPixel(img, xa + x, ya + y)); //sets the pixels by correctly locating them in the bigger picture
     }
   }
   return subimg;
@@ -526,7 +526,7 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   for (int xa = 0; xa<img2->width; xa++){
     for (int ya = 0; ya<img2->height; ya++){
-      ImageSetPixel(img1, xa + x, ya + y, ImageGetPixel(img2, xa, ya));
+      ImageSetPixel(img1, xa + x, ya + y, ImageGetPixel(img2, xa, ya)); //copies img2 onto img1
     }
   }
 }
