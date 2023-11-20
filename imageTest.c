@@ -29,6 +29,9 @@ int main(int argc, char* argv[]) {
   }
   */
 
+  int px;
+  int py;
+
   for (int i = 1; i < argc; i++){
 
     ImageInit();
@@ -111,6 +114,73 @@ int main(int argc, char* argv[]) {
       error(2, errno, "%s: %s", argv[2], ImageErrMsg());
     }
     cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
+    InstrReset();
+
+    printf("\n===========\n");
+
+    printf("\n# SUBIMAGE LOCATING size 1/16 - BEST CASE\n");
+    Image sub16b = ImageCrop(img1, 0, 0, ImageWidth(img1)/16, ImageHeight(img1)/16);
+    ImageLocateSubImage(img1, &px, &py, sub16b);
+    InstrPrint();
+    InstrReset();
+    printf("\n------\n");
+
+    printf("\n# SUBIMAGE LOCATING size 1/16 - WORST CASE\n");
+    Image sub16w = ImageCrop(img1, ImageWidth(img1) - ImageWidth(img1)/16, ImageHeight(img1) - ImageHeight(img1)/16, ImageWidth(img1)/16, ImageHeight(img1)/16);
+    ImageLocateSubImage(img1, &px, &py, sub16w);
+    InstrPrint();
+    InstrReset();
+    printf("\n------\n");
+
+    printf("\n# SUBIMAGE LOCATING size 1/8 - BEST CASE\n");
+    Image sub8b = ImageCrop(img1, 0, 0, ImageWidth(img1)/8, ImageHeight(img1)/8);
+    ImageLocateSubImage(img1, &px, &py, sub8b);
+    InstrPrint();
+    InstrReset();
+
+    printf("\n# SUBIMAGE LOCATING size 1/8 - WORST CASE\n");
+    Image sub8w = ImageCrop(img1, ImageWidth(img1) - ImageWidth(img1)/8, ImageHeight(img1) - ImageHeight(img1)/8, ImageWidth(img1)/8, ImageHeight(img1)/8);
+    ImageLocateSubImage(img1, &px, &py, sub8w);
+    InstrPrint();
+    InstrReset();
+    printf("\n------\n");
+
+    printf("\n# SUBIMAGE LOCATING size 1/4 - BEST CASE\n");
+    Image sub4b = ImageCrop(img1, 0, 0, ImageWidth(img1)/4, ImageHeight(img1)/4);
+    ImageLocateSubImage(img1, &px, &py, sub4b);
+    InstrPrint();
+    InstrReset();
+
+    printf("\n# SUBIMAGE LOCATING size 1/4 - WORST CASE\n");
+    Image sub4w = ImageCrop(img1, ImageWidth(img1) - ImageWidth(img1)/4, ImageHeight(img1) - ImageHeight(img1)/4, ImageWidth(img1)/4, ImageHeight(img1)/4);
+    ImageLocateSubImage(img1, &px, &py, sub4w);
+    InstrPrint();
+    InstrReset();
+    printf("\n------\n");
+
+        printf("\n# SUBIMAGE LOCATING size 1/2 - BEST CASE\n");
+    Image sub2b = ImageCrop(img1, 0, 0, ImageWidth(img1)/2, ImageHeight(img1)/2);
+    ImageLocateSubImage(img1, &px, &py, sub2b);
+    InstrPrint();
+    InstrReset();
+
+    printf("\n# SUBIMAGE LOCATING size 1/2 - WORST CASE\n");
+    Image sub2w = ImageCrop(img1, ImageWidth(img1) - ImageWidth(img1)/2, ImageHeight(img1) - ImageHeight(img1)/2, ImageWidth(img1)/2, ImageHeight(img1)/2);
+    ImageLocateSubImage(img1, &px, &py, sub2w);
+    InstrPrint();
+    InstrReset();
+    printf("\n------\n");
+
+        printf("\n# SUBIMAGE LOCATING size 1/1 - BEST CASE\n");
+    Image sub1b = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
+    ImageLocateSubImage(img1, &px, &py, sub1b);
+    InstrPrint();
+    InstrReset();
+
+    printf("\n# SUBIMAGE LOCATING size 1/1 - WORST CASE\n");
+    Image sub1w = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
+    ImageLocateSubImage(img1, &px, &py, sub1w);
+    InstrPrint();
     InstrReset();
     printf("\n------\n");
 
