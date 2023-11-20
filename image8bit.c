@@ -426,7 +426,7 @@ void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
   for (int x = 0; x<img->width; x++){
     for (int y = 0; y<img->height; y++){
-      ImageSetPixel(img, x, y, MIN((uint8)ImageGetPixel(img, x, y) * factor + 0.5, img->maxval)); //a negative factor also negates the image while applying the brightening factor. 0.5 is added for rounding purposes (the value is floored by default)
+      ImageSetPixel(img, x, y, MIN((uint8)(ImageGetPixel(img, x, y) * factor + 0.5), img->maxval)); //a negative factor also negates the image while applying the brightening factor. 0.5 is added for rounding purposes (the value is floored by default)
     }
   }
 }
