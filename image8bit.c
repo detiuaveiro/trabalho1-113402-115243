@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include "instrumentation.h"
 
+
+
 // The data structure
 //
 // An image is stored in a structure containing 3 fields:
@@ -57,6 +59,17 @@ struct image {
   int maxval;   // maximum gray value (pixels with maxval are pure WHITE)
   uint8* pixel; // pixel data (a raster scan)
 };
+
+int* valuesum1;
+int* valuesum2;
+
+InitializeSum1(Image img){
+  valuesum1 = (int*) malloc(sizeof(int*) * img->height * img->width);
+}
+
+InitializeSum2(Image img){
+  valuesum2 = (int*) malloc(sizeof(int*) * img->height * img->width);
+}
 
 
 // This module follows "design-by-contract" principles.
@@ -552,7 +565,7 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
 /// Compare an image to a subimage of a larger image.
 /// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
 /// Returns 0, otherwise.
-int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
+int OldImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
@@ -567,6 +580,32 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   return 1;
 }
 
+int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
+  assert (img1 != NULL);
+  assert (img2 != NULL);
+  assert (ImageValidPos(img1, x, y));
+  int xstart, xend, ystart, yend;
+  for (int xa = 0; xa < img2->width; xa++){
+    int x1 = xa + x;
+    int y1 = y + ImageHeight(img2) - 1;
+    PIXCOMP += 5;
+    int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
+    if (value1 != valuesum2[G(img2, xa, img2->height - 1)]){
+      return 0;
+    }
+  }
+  for (int ya = 0; ya < img2->height; ya++){
+    int x1 = x + ImageWidth(img2) - 1;
+    int y1 = y + ya;
+    PIXCOMP += 5;
+    int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
+    if (value1 != valuesum2[G(img2, img2->width - 1, ya)]){
+      return 0;
+    }
+  }
+  return 1;
+}
+
 /// Locate a subimage inside another image.
 /// Searches for img2 inside img1.
 /// If a match is found, returns 1 and matching position is set in vars (*px, *py).
@@ -574,6 +613,21 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
 int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
+  InitializeSum1(img1);
+  for (int x = 0; x < img1->width; x++){
+    for (int y = 0; y < img1->height; y++){
+      PIXCOMP += 4;
+      valuesum1[G(img1, x, y)] = (int)ImageGetPixel(img1, x, y) + ((x > 0) ? valuesum1[G(img1, x-1, y)] : 0) + ((y > 0) ? valuesum1[G(img1, x, y-1)] : 0) - ((x > 0 && y > 0) ? valuesum1[G(img1, x-1, y-1)] : 0);
+    }
+  }
+
+  InitializeSum2(img2);
+  for (int x2 = 0; x2 < img2->width; x2++){
+    for (int y2 = 0; y2 < img2->height; y2++){
+      PIXCOMP += 4;
+      valuesum2[G(img2, x2, y2)] = (int)ImageGetPixel(img2, x2, y2) + ((x2 > 0) ? valuesum2[G(img2, x2-1, y2)] : 0) + ((y2 > 0) ? valuesum2[G(img2, x2, y2-1)] : 0) - ((x2 > 0 && y2 > 0) ? valuesum2[G(img2, x2-1, y2-1)] : 0);
+    }
+  }
   for (int xa = 0; xa<img1->width - img2->width + 1 ; xa++){
     for (int ya = 0; ya<img1->height - img2->height + 1; ya++){
       PIXCOMP++;
