@@ -447,7 +447,7 @@ void ImageBrighten(Image img, double factor) { ///
 
 /// Geometric transformations
 
-/// These functions apply geometric transformations to an image,
+/// These functions apply geometric transformations to an image, a
 /// returning a new image as a result.
 /// 
 /// Success and failure are treated as in ImageCreate:

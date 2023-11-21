@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
   char* str[100];
   /*
   if (argc != 3) {
-    error(1, 0, "Usage: imageTest input.pgm output.pgm");
+    error(1, 0, "Usage: imageTest input.pgm output.pgm"); a
   }
   */
 
