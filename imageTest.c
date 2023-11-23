@@ -38,13 +38,13 @@ int main(int argc, char* argv[]) {
   }
   */
 
-  int px;
-  int py;
-  int res;
+  int px = 0;
+  int py = 0;
+  int res = 0;
 
+
+  ImageInit();
   for (int i = 1; i < argc; i++){
-
-    ImageInit();
     
     printf("\n# LOAD NEW image : %s\n", argv[i]);
     InstrReset(); // to reset instrumentation
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
     int prev_count = 0, cur_count;
     double division;
     for (int trial_width = 1; trial_width < ImageWidth(cp1); trial_width*=2){
-      Image subbest = ImageCrop(cp1, 0, 0, trial_width, ImageHeight(cp1)-1);
+      Image subbest = ImageCrop(cp1, 0, 0, trial_width, ImageHeight(cp1));
       InstrReset();
       res = ImageLocateSubImage(cp1, &px, &py, subbest);
       printf("\n# SUBIMAGE LOCATING size %d width - BEST CASE (success: %d)\n", trial_width, res);
@@ -154,11 +154,13 @@ int main(int argc, char* argv[]) {
       fflush(stdout);
       printf("\n------\n");
       Image subworst = ImageCrop(cp1, ImageWidth(cp1) - trial_width, 0, trial_width, ImageHeight(cp1));
-      ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-1, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-1) - 1);
-      ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-2, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-2) + 1);
-      if (trial_width > 1){
-        ImageSetPixel(subworst, ImageWidth(subworst)-2, ImageHeight(subworst)-1, ImageGetPixel(subworst,ImageWidth(subworst)-2, ImageHeight(subworst)-1) + 1);
-        ImageSetPixel(subworst, ImageWidth(subworst)-2, ImageHeight(subworst)-2, ImageGetPixel(subworst,ImageWidth(subworst)-2, ImageHeight(subworst)-2) - 1);
+      for (int y = 0; y < ImageHeight(subworst); y++)
+      {
+        for (int x = 0; x < trial_width; x++)
+        {
+          int pixelValue = (x + y) % 2 == 0 ? -1 : 1;
+          ImageSetPixel(subworst, x, y, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-1)+ pixelValue);
+        }
       }
       InstrReset();
       res = ImageLocateSubImage(cp1, &px, &py, subworst);
@@ -168,9 +170,101 @@ int main(int argc, char* argv[]) {
       printf("\n------\n");
     }
 
+    prev_count = 0;
+    for (int trial_square = 2; trial_square < ImageWidth(cp1) && trial_square < ImageHeight(cp1); trial_square*=2){
+      Image subbest = ImageCrop(cp1, 0, 0, trial_square, trial_square);
+      InstrReset();
+      res = ImageLocateSubImage(cp1, &px, &py, subbest);
+      printf("\n# SUBIMAGE LOCATING size %d square - BEST CASE (success: %d)\n", trial_square, res);
+      InstrPrint();
+      if (prev_count != 0){
+        cur_count = PIXMEM;
+        division = (double) cur_count/prev_count;
+        printf("PIXMEM COMP (2n/n): %f\n", division);
+      }
+      prev_count = PIXMEM;
+      fflush(stdout);
+      printf("\n------\n");
+      Image subworst = ImageCrop(cp1, ImageWidth(cp1) - trial_square, ImageHeight(cp1) - trial_square, trial_square, trial_square);
+      ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-1, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-1) - 1);
+      ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-2, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-2) + 1);
+      if (trial_square > 1){
+        ImageSetPixel(subworst, ImageWidth(subworst)-2, ImageHeight(subworst)-1, ImageGetPixel(subworst,ImageWidth(subworst)-2, ImageHeight(subworst)-1) + 1);
+        ImageSetPixel(subworst, ImageWidth(subworst)-2, ImageHeight(subworst)-2, ImageGetPixel(subworst,ImageWidth(subworst)-2, ImageHeight(subworst)-2) - 1);
+      }
+      InstrReset();
+      res = ImageLocateSubImage(cp1, &px, &py, subworst);
+      printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", trial_square, res);
+      InstrPrint();
+      fflush(stdout);
+      printf("\n------\n");
+    }
     ImageDestroy(&img1);
     ImageDestroy(&cp1);
   }
+
+
+  Image cento44 = ImageCreate(144, 144, PixMax);
+  MassSetting(cento44, 100);
+  ImageSetPixel(cento44, 143, 143, 0);
+
+
+  Image trinta6 = ImageCreate(72, 72, PixMax);
+  MassSetting(trinta6, 100);
+  ImageSetPixel(trinta6, 71, 71, 0);
+
+
+  Image quarenta8 = ImageCreate(83, 83, PixMax);
+  MassSetting(quarenta8, 100);
+  ImageSetPixel(quarenta8, 82, 82, 0);
+
+
+  InstrReset();
+  res = ImageLocateSubImage(cento44, &px, &py, trinta6);
+  printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", 72, res);
+  InstrPrint();
+
+  InstrReset();
+  res = ImageLocateSubImage(cento44, &px, &py, quarenta8);
+  printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", 82, res);
+  InstrPrint();
+
+  InstrReset();
+  res = OldImageLocateSubImage(cento44, &px, &py, trinta6);
+  printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", 72, res);
+  InstrPrint();
+
+  InstrReset();
+  res = OldImageLocateSubImage(cento44, &px, &py, quarenta8);
+  printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", 82, res);
+  InstrPrint();
+
+
+}
+
+  /*Image giant = ImageCreate(3000, 3000, PixMax);
+  MassSetting(giant, 100);
+  int prev_count = 0, cur_count;
+  double division;
+  for (int i = 1; i < ImageWidth(giant); i*=2){
+    Image subgiant = ImageCreate(i, i, PixMax);
+    ImageSetPixel(subgiant, ImageWidth(subgiant)-1, ImageHeight(subgiant)-1, ImageGetPixel(subgiant,ImageWidth(subgiant)-1, ImageHeight(subgiant)-1) - 1);
+    if (i > 1){
+      ImageSetPixel(subgiant, ImageWidth(subgiant)-1, ImageHeight(subgiant)-2, ImageGetPixel(subgiant,ImageWidth(subgiant)-1, ImageHeight(subgiant)-2) + 1);
+      ImageSetPixel(subgiant, ImageWidth(subgiant)-2, ImageHeight(subgiant)-1, ImageGetPixel(subgiant,ImageWidth(subgiant)-2, ImageHeight(subgiant)-1) + 1);
+      ImageSetPixel(subgiant, ImageWidth(subgiant)-2, ImageHeight(subgiant)-2, ImageGetPixel(subgiant,ImageWidth(subgiant)-2, ImageHeight(subgiant)-2) - 1);
+    }
+    InstrReset();
+    printf("\n# SUBIMAGE LOCATING GIANT size %d square - WORST CASE (sucesss: %d)\n", i, res);
+    ImageLocateSubImage(giant, px, py, subgiant);
+    if (prev_count != 0){
+      cur_count = PIXMEM - (10000*10000);
+      division = (double) cur_count/prev_count;
+      printf("PIXMEM COMP (2n/n): %f\n", division);
+    }
+    prev_count = PIXMEM - (10000*10000);
+    InstrPrint();
+  }*/
 
   /*printf("# LOAD image");
   ImageInit();
@@ -200,7 +294,6 @@ int main(int argc, char* argv[]) {
   
   // Try changing the behaviour of the program by commenting/uncommenting
   // the appropriate lines.
-/*
   int px, py;
   int output = ImageLocateSubImage(cp1, &px, &py, img2);
   printf("%d %d %d\n", output, px, py);
@@ -220,6 +313,4 @@ int main(int argc, char* argv[]) {
   ImageDestroy(&img1);
   ImageDestroy(&img2);  */
 
- return 0;
-}
 

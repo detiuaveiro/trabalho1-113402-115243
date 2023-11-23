@@ -584,7 +584,6 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
-  int xstart, xend, ystart, yend;
   for (int xa = img2->width - 1; xa >= 0; xa--){
     int x1 = xa + x;
     int y1 = y + ImageHeight(img2) - 1;
@@ -602,6 +601,21 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
     }
   }
   return 1;
+}
+
+int OldImageLocateSubImage(Image img1, int* px, int* py, Image img2) {
+  assert (img1 != NULL);
+  assert (img2 != NULL);
+  for (int xa = 0; xa<img1->width - img2->width + 1; xa++){
+    for (int ya = 0; ya<img1->height - img2->height + 1; ya++){
+      if (OldImageMatchSubImage(img1, xa, ya, img2)){
+        *px = xa;
+        *py = ya;
+        return 1;
+      }
+    }
+  }
+  return 0;
 }
 
 /// Locate a subimage inside another image.
@@ -624,12 +638,15 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
       valuesum2[G(img2, x2, y2)] = pow((int)ImageGetPixel(img2, x2, y2),2) + ((x2 > 0) ? valuesum2[G(img2, x2-1, y2)] : 0) + ((y2 > 0) ? valuesum2[G(img2, x2, y2-1)] : 0) - ((x2 > 0 && y2 > 0) ? valuesum2[G(img2, x2-1, y2-1)] : 0);
     }
   }
-  for (int xa = 0; xa<img1->width - img2->width + 1 ; xa++){
+
+  for (int xa = 0; xa<img1->width - img2->width + 1; xa++){
     for (int ya = 0; ya<img1->height - img2->height + 1; ya++){
       if (ImageMatchSubImage(img1, xa, ya, img2)){
-        *px = xa;
-        *py = ya;
-        return 1;
+        if (OldImageMatchSubImage(img1, xa, ya, img2)){
+          *px = xa;
+          *py = ya;
+          return 1;
+        }
       }
     }
   }
