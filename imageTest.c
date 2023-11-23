@@ -15,11 +15,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "image8bit.h"
 #include "instrumentation.h"
 
 #define PIXMEM InstrCount[0]
 #define PIXCOMP InstrCount[1]
+
+void MassSetting(Image img, uint8 value){
+  for (int x = 0; x < ImageWidth(img); x++){
+    for (int y = 0; y < ImageHeight(img); y++){
+      ImageSetPixel(img, x, y, value);
+    }
+  }
+}
 
 int main(int argc, char* argv[]) {
   char* str[100];
@@ -125,120 +134,35 @@ int main(int argc, char* argv[]) {
     InstrReset();
 
     printf("\n===========\n");
+    MassSetting(cp1, 100);
 
-
-    cp1 = ImageCrop(cp1, 0, 0, ImageWidth(cp1), ImageHeight(cp1));  
-    ImageThreshold(cp1,0);
-
-    
-    Image sub16b = ImageCrop(cp1, 0, 0, ImageWidth(cp1)/16, ImageHeight(cp1)/16);
-    res = ImageLocateSubImage(cp1, &px, &py, sub16b);
-    printf("\n# SUBIMAGE LOCATING size 1/16 - BEST CASE (success: %d)\n", res);
-    InstrPrint();
-    fflush(stdout);
-    printf("\n------\n");
-
-    
-    Image sub16w = ImageCrop(cp1, ImageWidth(cp1) - ImageWidth(cp1)/16, ImageHeight(cp1) - ImageHeight(cp1)/16, ImageWidth(cp1)/16, ImageHeight(cp1)/16);
-    ImageSetPixel(sub16w, ImageWidth(sub16w)-1, ImageHeight(sub16w)-1, 255 - ImageGetPixel(sub16w,ImageWidth(sub16w)-1, ImageHeight(sub16w)-1));
-    InstrReset();
-    res = ImageLocateSubImage(cp1, &px, &py, sub16w);
-    printf("\n# SUBIMAGE LOCATING size 1/16 - WORST CASE (sucesss: %d)\n", res);
-    InstrPrint();
-    fflush(stdout);
-    sprintf(str,"tests/sub16w%d.pgm", i);
-    if (ImageSave(sub16w, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
+    int trial_width = 1;
+    int prev_count = 0, cur_count;
+    double division;
+    for (int trial_width = 1; trial_width < ImageWidth(cp1); trial_width*=2){
+      Image subbest = ImageCrop(cp1, 0, 0, trial_width, ImageHeight(cp1)-1);
+      InstrReset();
+      res = ImageLocateSubImage(cp1, &px, &py, subbest);
+      printf("\n# SUBIMAGE LOCATING size %d width - BEST CASE (success: %d)\n", trial_width, res);
+      InstrPrint();
+      if (prev_count != 0){
+        cur_count = PIXMEM;
+        division = (double) cur_count/prev_count;
+        printf("PIXMEM COMP (2n/n): %f\n", division);
+      }
+      prev_count = PIXMEM;
+      fflush(stdout);
+      printf("\n------\n");
+      Image subworst = ImageCrop(cp1, ImageWidth(cp1) - trial_width, 0, trial_width, ImageHeight(cp1));
+      ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-1, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-1) - 1);
+      ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-2, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-2) + 1);
+      InstrReset();
+      res = ImageLocateSubImage(cp1, &px, &py, subworst);
+      printf("\n# SUBIMAGE LOCATING size %d width - WORST CASE (sucesss: %d)\n", trial_width, res);
+      InstrPrint();
+      fflush(stdout);
+      printf("\n------\n");
     }
-    printf("\n------\n");
-
-
-    Image sub8b = ImageCrop(cp1, 0, 0, ImageWidth(cp1)/8, ImageHeight(cp1)/8);
-    InstrReset();
-    res = ImageLocateSubImage(cp1, &px, &py, sub8b);
-    printf("\n# SUBIMAGE LOCATING size 1/8 - BEST CASE (success: %d)\n", res);
-    InstrPrint();
-    fflush(stdout);
-    
-
-    printf("\n# SUBIMAGE LOCATING size 1/8 - WORST CASE\n");
-    Image sub8w = ImageCrop(cp1, ImageWidth(cp1) - ImageWidth(cp1)/8, ImageHeight(cp1) - ImageHeight(cp1)/8, ImageWidth(cp1)/8, ImageHeight(cp1)/8);
-    ImageSetPixel(sub8w, ImageWidth(sub8w)-1, ImageHeight(sub8w)-1, 255 - ImageGetPixel(sub8w,ImageWidth(sub8w)-1, ImageHeight(sub8w)-1));
-    InstrReset();
-    ImageLocateSubImage(cp1, &px, &py, sub8w);
-    InstrPrint();
-    fflush(stdout);
-    sprintf(str,"tests/sub8w%d.pgm", i);
-    if (ImageSave(sub16w, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    
-    printf("\n------\n");
-
-    printf("\n# SUBIMAGE LOCATING size 1/4 - BEST CASE\n");
-    Image sub4b = ImageCrop(cp1, 0, 0, ImageWidth(cp1)/4, ImageHeight(cp1)/4);
-    InstrReset();
-    ImageLocateSubImage(cp1, &px, &py, sub4b);
-    InstrPrint();
-    fflush(stdout);
-    
-
-    printf("\n# SUBIMAGE LOCATING size 1/4 - WORST CASE\n");
-    Image sub4w = ImageCrop(cp1, ImageWidth(cp1) - ImageWidth(cp1)/4, ImageHeight(cp1) - ImageHeight(cp1)/4, ImageWidth(cp1)/4, ImageHeight(cp1)/4);
-    ImageSetPixel(sub4w, ImageWidth(sub4w)-1, ImageHeight(sub4w)-1, 255 - ImageGetPixel(sub4w,ImageWidth(sub4w)-1, ImageHeight(sub4w)-1));
-    InstrReset();
-    ImageLocateSubImage(cp1, &px, &py, sub4w);
-    InstrPrint();
-    fflush(stdout);
-    sprintf(str,"tests/sub4w%d.pgm", i);
-    if (ImageSave(sub16w, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    
-    printf("\n------\n");
-
-    printf("\n# SUBIMAGE LOCATING size 1/2 - BEST CASE\n");
-    Image sub2b = ImageCrop(cp1, 0, 0, ImageWidth(cp1)/2, ImageHeight(cp1)/2);
-    InstrReset();
-    ImageLocateSubImage(cp1, &px, &py, sub2b);
-    InstrPrint();
-    fflush(stdout);
-    
-
-    printf("\n# SUBIMAGE LOCATING size 1/2 - WORST CASE\n");
-    Image sub2w = ImageCrop(cp1, ImageWidth(cp1) - ImageWidth(cp1)/2, ImageHeight(cp1) - ImageHeight(cp1)/2, ImageWidth(cp1)/2, ImageHeight(cp1)/2);
-    ImageSetPixel(sub2w, ImageWidth(sub2w)-1, ImageHeight(sub2w)-1, 255 - ImageGetPixel(sub2w,ImageWidth(sub2w)-1, ImageHeight(sub2w)-1));
-    InstrReset();
-    ImageLocateSubImage(cp1, &px, &py, sub2w);
-    InstrPrint();
-    fflush(stdout);
-    sprintf(str,"tests/sub4w%d.pgm", i);
-    if (ImageSave(sub16w, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    
-    printf("\n------\n");
-
-    printf("\n# SUBIMAGE LOCATING size 1/1 - BEST CASE\n");
-    Image sub1b = ImageCrop(cp1, 0, 0, ImageWidth(cp1), ImageHeight(cp1));
-    InstrReset();
-    ImageLocateSubImage(cp1, &px, &py, sub1b);
-    InstrPrint();
-    fflush(stdout);
-    
-
-    printf("\n# SUBIMAGE LOCATING size 1/1 - WORST CASE\n");
-    Image sub1w = ImageCrop(cp1, 0, 0, ImageWidth(cp1), ImageHeight(cp1));
-    ImageSetPixel(sub1w, ImageWidth(sub1w)-1, ImageHeight(sub1w)-1, 255 - ImageGetPixel(sub1w,ImageWidth(sub1w)-1, ImageHeight(sub1w)-1));
-    InstrReset();
-    ImageLocateSubImage(cp1, &px, &py, sub1w);
-    InstrPrint();
-    fflush(stdout);
-    sprintf(str,"tests/sub4w%d.pgm", i);
-    if (ImageSave(sub1w, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    printf("\n------\n");
 
     ImageDestroy(&img1);
     ImageDestroy(&cp1);
