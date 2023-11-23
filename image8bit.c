@@ -63,11 +63,11 @@ struct image {
 int* valuesum1;
 int* valuesum2;
 
-InitializeSum1(Image img){
+static void InitializeSum1(Image img){
   valuesum1 = (int*) malloc(sizeof(int*) * img->height * img->width);
 }
 
-InitializeSum2(Image img){
+static void InitializeSum2(Image img){
   valuesum2 = (int*) malloc(sizeof(int*) * img->height * img->width);
 }
 
@@ -585,10 +585,7 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
   int xstart, xend, ystart, yend;
-  if (valuesum1[(img2->width*img1->width) - 1] != valuesum1[(img2->width*img1->width) - 1]){
-    return 0;
-  }
-  for (int xa = 0; xa < img2->width; xa++){
+  for (int xa = img2->width - 1; xa >= 0; xa--){
     int x1 = xa + x;
     int y1 = y + ImageHeight(img2) - 1;
     int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
@@ -596,7 +593,7 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
       return 0;
     }
   }
-  for (int ya = 0; ya < img2->height; ya++){
+  for (int ya = img2->height - 1; ya >= 0 ; ya--){
     int x1 = x + ImageWidth(img2) - 1;
     int y1 = y + ya;
     int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);

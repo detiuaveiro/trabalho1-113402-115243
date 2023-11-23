@@ -156,6 +156,10 @@ int main(int argc, char* argv[]) {
       Image subworst = ImageCrop(cp1, ImageWidth(cp1) - trial_width, 0, trial_width, ImageHeight(cp1));
       ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-1, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-1) - 1);
       ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-2, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-2) + 1);
+      if (trial_width > 1){
+        ImageSetPixel(subworst, ImageWidth(subworst)-2, ImageHeight(subworst)-1, ImageGetPixel(subworst,ImageWidth(subworst)-2, ImageHeight(subworst)-1) + 1);
+        ImageSetPixel(subworst, ImageWidth(subworst)-2, ImageHeight(subworst)-2, ImageGetPixel(subworst,ImageWidth(subworst)-2, ImageHeight(subworst)-2) - 1);
+      }
       InstrReset();
       res = ImageLocateSubImage(cp1, &px, &py, subworst);
       printf("\n# SUBIMAGE LOCATING size %d width - WORST CASE (sucesss: %d)\n", trial_width, res);
