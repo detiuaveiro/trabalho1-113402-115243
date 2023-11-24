@@ -31,214 +31,246 @@ void MassSetting(Image img, uint8 value){
 }
 
 int main(int argc, char* argv[]) {
-  char* str[100];
   /*
   if (argc != 3) {
     error(1, 0, "Usage: imageTest input.pgm output.pgm"); a
   }
   */
 
-  int px = 0;
-  int py = 0;
-  int res = 0;
+  int px, py;
+
+  long long int old_count = 0;
+  long long int new_count = 0;
+  double division = 0;
+
+  long long int old_comps = 0;
+  long long int new_comps = 0;
+  double division_comps = 0;
 
 
   ImageInit();
-  for (int i = 1; i < argc; i++){
-    
-    printf("\n# LOAD NEW image : %s\n", argv[i]);
-    InstrReset(); // to reset instrumentation
-    Image img1 = ImageLoad(argv[i]);
-    int n = PIXMEM;
-    // Image img2 = ImageLoad(argv[2]);
-    if (img1 == NULL) {
-      error(2, errno, "Loading %s: %s", argv[i], ImageErrMsg());
-    }
-    InstrPrint();
-    fflush(stdout); // to print instrumentation
-    Image cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
+  printf("OLD BLUR ANALYSIS\n");
 
+  printf("Analysis of image size in time complexity (Window 5x5 / Image 5x5 - 1280x1280)\n");
+  for (int window = 5; window <= 2560; window*=2){
+    Image image = ImageCreate(window, window, PixMax);
+    printf("# Blur - Window 5x5 | Image %dx%d\n", window, window);
     InstrReset();
-    printf("\n# NORMAL BLUR image (size: %d - window 7x7)\n", n);
-    ImageOldBlur(cp1, 7, 7);
+    ImageOldBlur(image, 5, 5);
+    if (old_count != 0){
+      new_count = PIXMEM;
+      division = (long double) new_count/ (long double) old_count;
+    }
+    old_count = PIXMEM;
+    if (old_comps != 0){
+      new_comps = PIXCOMP;
+      division_comps = (long double) new_comps/ (long double) old_comps;
+    }
+    old_comps = PIXCOMP;
     InstrPrint();
-    fflush(stdout);
-
-    sprintf(str,"tests/nblur%d_7x7.pgm", i);
-    if (ImageSave(cp1, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
-
-    InstrReset();
-    printf("\n# NORMAL BLUR image (size: %d - window 15x15)\n", n);
-    ImageOldBlur(cp1, 15, 15);
-    InstrPrint();
-    fflush(stdout);
-
-    sprintf(str,"tests/nblur%d_15x15.pgm", i);
-    if (ImageSave(cp1, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
-
-    InstrReset();
-    printf("\n# NORMAL BLUR image (size: %d - window 50x50)\n", n);
-    ImageOldBlur(cp1, 50, 50);
-    InstrPrint();
-    fflush(stdout);
-
-
-    sprintf(str,"tests/nblur%d_50x50.pgm", i);
-    if (ImageSave(cp1, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
-
-
-    InstrReset();
-    printf("\n# SUMMATION TABLE BLUR image (size: %d - window 7x7)\n", n);
-    ImageBlur(cp1, 7, 7);
-    InstrPrint();
-    fflush(stdout);
-
-    sprintf(str,"tests/stblur%d_7x7.pgm", i);
-    if (ImageSave(cp1, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
-
-    InstrReset();
-    printf("\n# SUMMATION TABLE BLUR image (size: %d- window 15x15)\n", n);
-    ImageBlur(cp1, 15, 15);
-    InstrPrint();
-    fflush(stdout);
-
-    sprintf(str,"tests/stblur%d_15x15.pgm", i);
-    if (ImageSave(cp1, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
-
-    InstrReset();
-    printf("\n# SUMMATION TABLE BLUR image (size: %d- window 50x50)\n", n);
-    ImageBlur(cp1, 50, 50);
-    InstrPrint();
-    fflush(stdout);
-
-    sprintf(str,"tests/stblur%d_50x50.pgm", i);
-    if (ImageSave(cp1, str) == 0) {
-      error(2, errno, "%s: %s", argv[2], ImageErrMsg());
-    }
-    cp1 = ImageCrop(img1, 0, 0, ImageWidth(img1), ImageHeight(img1));
-    InstrReset();
-
-    printf("\n===========\n");
-    MassSetting(cp1, 100);
-
-    int trial_width = 1;
-    int prev_count = 0, cur_count;
-    double division;
-    for (int trial_width = 1; trial_width < ImageWidth(cp1); trial_width*=2){
-      Image subbest = ImageCrop(cp1, 0, 0, trial_width, ImageHeight(cp1));
-      InstrReset();
-      res = ImageLocateSubImage(cp1, &px, &py, subbest);
-      printf("\n# SUBIMAGE LOCATING size %d width - BEST CASE (success: %d)\n", trial_width, res);
-      InstrPrint();
-      if (prev_count != 0){
-        cur_count = PIXMEM;
-        division = (double) cur_count/prev_count;
-        printf("PIXMEM COMP (2n/n): %f\n", division);
-      }
-      prev_count = PIXMEM;
-      fflush(stdout);
-      printf("\n------\n");
-      Image subworst = ImageCrop(cp1, ImageWidth(cp1) - trial_width, 0, trial_width, ImageHeight(cp1));
-      for (int y = 0; y < ImageHeight(subworst); y++)
-      {
-        for (int x = 0; x < trial_width; x++)
-        {
-          int pixelValue = (x + y) % 2 == 0 ? -1 : 1;
-          ImageSetPixel(subworst, x, y, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-1)+ pixelValue);
-        }
-      }
-      InstrReset();
-      res = ImageLocateSubImage(cp1, &px, &py, subworst);
-      printf("\n# SUBIMAGE LOCATING size %d width - WORST CASE (sucesss: %d)\n", trial_width, res);
-      InstrPrint();
-      fflush(stdout);
-      printf("\n------\n");
-    }
-
-    prev_count = 0;
-    for (int trial_square = 2; trial_square < ImageWidth(cp1) && trial_square < ImageHeight(cp1); trial_square*=2){
-      Image subbest = ImageCrop(cp1, 0, 0, trial_square, trial_square);
-      InstrReset();
-      res = ImageLocateSubImage(cp1, &px, &py, subbest);
-      printf("\n# SUBIMAGE LOCATING size %d square - BEST CASE (success: %d)\n", trial_square, res);
-      InstrPrint();
-      if (prev_count != 0){
-        cur_count = PIXMEM;
-        division = (double) cur_count/prev_count;
-        printf("PIXMEM COMP (2n/n): %f\n", division);
-      }
-      prev_count = PIXMEM;
-      fflush(stdout);
-      printf("\n------\n");
-      Image subworst = ImageCrop(cp1, ImageWidth(cp1) - trial_square, ImageHeight(cp1) - trial_square, trial_square, trial_square);
-      ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-1, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-1) - 1);
-      ImageSetPixel(subworst, ImageWidth(subworst)-1, ImageHeight(subworst)-2, ImageGetPixel(subworst,ImageWidth(subworst)-1, ImageHeight(subworst)-2) + 1);
-      if (trial_square > 1){
-        ImageSetPixel(subworst, ImageWidth(subworst)-2, ImageHeight(subworst)-1, ImageGetPixel(subworst,ImageWidth(subworst)-2, ImageHeight(subworst)-1) + 1);
-        ImageSetPixel(subworst, ImageWidth(subworst)-2, ImageHeight(subworst)-2, ImageGetPixel(subworst,ImageWidth(subworst)-2, ImageHeight(subworst)-2) - 1);
-      }
-      InstrReset();
-      res = ImageLocateSubImage(cp1, &px, &py, subworst);
-      printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", trial_square, res);
-      InstrPrint();
-      fflush(stdout);
-      printf("\n------\n");
-    }
-    ImageDestroy(&img1);
-    ImageDestroy(&cp1);
+    printf("PIXMEM 4n/n == %f\n", division);
+    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
   }
 
+  new_count = 0, old_count = 0, division = 0;
+  new_comps = 0, old_comps = 0, division_comps = 0;
 
-  Image cento44 = ImageCreate(144, 144, PixMax);
-  MassSetting(cento44, 100);
-  ImageSetPixel(cento44, 143, 143, 0);
+  printf("Analysis of window size in time complexity (Window 1x1-128x128 / Image 1000x1000)\n");
+  for (int window = 1; window <= 200; window*=2){
+    Image image = ImageCreate(1000, 1000, PixMax);
+    printf("# Blur - Window %dx%d | Image 1000x1000\n", window, window);
+    InstrReset();
+    ImageOldBlur(image, window, window);
+    if (old_count != 0){
+      new_count = PIXMEM;
+      division = (long double) new_count/ (long double) old_count;
+    }
+    old_count = PIXMEM;
+    if (old_comps != 0){
+      new_comps = PIXCOMP;
+      division_comps = (long double) new_comps/ (long double) old_comps;
+    }
+    old_comps = PIXCOMP;
+    InstrPrint();
+    ImageDestroy(&image);
+    printf("PIXMEM 4n/n == %f\n", division);
+    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+  }
 
+  printf("\n----------\n\nNEW BLUR ANALYSIS\n");
 
-  Image trinta6 = ImageCreate(72, 72, PixMax);
-  MassSetting(trinta6, 100);
-  ImageSetPixel(trinta6, 71, 71, 0);
+  new_count = 0, old_count = 0, division = 0;
+  new_comps = 0, old_comps = 0, division_comps = 0;
 
+  printf("Analysis of image size in time complexity (Window 5x5 / Image 5x5 - 1280x1280)\n");
+  for (int window = 5; window <= 2560; window*=2){
+    Image image = ImageCreate(window, window, PixMax);
+    printf("# Blur - Window 5x5 | Image %dx%d\n", window, window);
+    InstrReset();
+    ImageBlur(image, 5, 5);
+    if (old_count != 0){
+      new_count = PIXMEM;
+      division = (long double) new_count/ (long double) old_count;
+    }
+    old_count = PIXMEM;
+    if (old_comps != 0){
+      new_comps = PIXCOMP;
+      division_comps = (long double) new_comps/ (long double) old_comps;
+    }
+    old_comps = PIXCOMP;
+    InstrPrint();
+    ImageDestroy(&image);
+    printf("PIXMEM 4n/n == %f\n", division);
+    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    fflush(stdout);
+  }
 
-  Image quarenta8 = ImageCreate(83, 83, PixMax);
-  MassSetting(quarenta8, 100);
-  ImageSetPixel(quarenta8, 82, 82, 0);
+  new_count = 0, old_count = 0, division = 0;
+  new_comps = 0, old_comps = 0, division_comps = 0;
 
+  printf("Analysis of window size in time complexity (Window 1x1 - 512x512 / Image 1000x1000)\n");
+  for (int window = 1; window <= 1000; window*=2){
+    Image image = ImageCreate(1000, 1000, PixMax);
+    printf("# Blur - Window %dx%d | Image 1000x1000\n", window, window);
+    InstrReset();
+    ImageBlur(image, window, window);
+    if (old_count != 0){
+      new_count = PIXMEM;
+      division = (long double) new_count/ (long double) old_count;
+    }
+    old_count = PIXMEM;
+    if (old_comps != 0){
+      new_comps = PIXCOMP;
+      division_comps = (long double) new_comps/ (long double) old_comps;
+    }
+    old_comps = PIXCOMP;
+    InstrPrint();
+    ImageDestroy(&image);
+    printf("PIXMEM 4n/n == %f\n", division);
+    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    fflush(stdout);
+  }
 
-  InstrReset();
-  res = ImageLocateSubImage(cento44, &px, &py, trinta6);
-  printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", 72, res);
-  InstrPrint();
+  printf("\n==========================\n\nOLD IMAGE SUBLOCATE ANALYSIS\n");
+  printf("Analysis of bigger image size in time complexity (Bigger Image 5x5 - 1280x1280 / Smaller Image 3x3)\n");
+  for (int window = 5; window <= 1280; window*=2){
+    Image image = ImageCreate(window, window, PixMax);
+    Image smaller = ImageCreate(3,3,PixMax);
+    MassSetting(image, 100);
+    MassSetting(smaller, 100);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-1) - 1);
+    printf("# Image Sublocate - Big %dx%d | Small 3x3\n", window, window);
+    InstrReset();
+    OldImageLocateSubImage(image, &px, &py, smaller);
+    if (old_count != 0){
+      new_count = PIXMEM;
+      division = (long double) new_count/ (long double) old_count;
+    }
+    old_count = PIXMEM;
+    if (old_comps != 0){
+      new_comps = PIXCOMP;
+      division_comps = (long double) new_comps/ (long double) old_comps;
+    }
+    old_comps = PIXCOMP;
+    InstrPrint();
+    ImageDestroy(&image);
+    ImageDestroy(&smaller);
+    printf("PIXMEM 4n/n == %f\n", division);
+    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+  }
 
-  InstrReset();
-  res = ImageLocateSubImage(cento44, &px, &py, quarenta8);
-  printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", 82, res);
-  InstrPrint();
+  printf("Analysis of smaller image size in time complexity (Bigger Image 800x800 / Smaller Image 1x1 - 512x512)\n");
+  for (int window = 1; window <= 512; window*=2){
+    Image image = ImageCreate(800, 800, PixMax);
+    Image smaller = ImageCreate(window,window,PixMax);
+    MassSetting(image, 100);
+    MassSetting(smaller, 100);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-1) - 1);
+    printf("# Image Sublocate - Big 800x800 | Small %dx%d\n", window, window);
+    InstrReset();
+    OldImageLocateSubImage(image, &px, &py, smaller);
+    if (old_count != 0){
+      new_count = PIXMEM;
+      division = (long double) new_count/ (long double) old_count;
+    }
+    old_count = PIXMEM;
+    if (old_comps != 0){
+      new_comps = PIXCOMP;
+      division_comps = (long double) new_comps/ (long double) old_comps;
+    }
+    old_comps = PIXCOMP;
+    InstrPrint();
+    ImageDestroy(&image);
+    ImageDestroy(&smaller);
+    printf("PIXMEM 4n/n == %f\n", division);
+    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+  }
 
-  InstrReset();
-  res = OldImageLocateSubImage(cento44, &px, &py, trinta6);
-  printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", 72, res);
-  InstrPrint();
+  printf("\n----------\n\nNEW IMAGE SUBLOCATE ANALYSIS\n");
 
-  InstrReset();
-  res = OldImageLocateSubImage(cento44, &px, &py, quarenta8);
-  printf("\n# SUBIMAGE LOCATING size %d square - WORST CASE (sucesss: %d)\n", 82, res);
-  InstrPrint();
+  printf("Analysis of bigger image size in time complexity (Bigger Image 5x5 - 1280x1280 / Smaller Image 3x3)\n");
+  for (int window = 5; window <= 1280; window*=2){
+    Image image = ImageCreate(window, window, PixMax);
+    Image smaller = ImageCreate(3,3,PixMax);
+    MassSetting(image, 100);
+    MassSetting(smaller, 100);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-1) - 1);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 2, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-2) + 1);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 2, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-2, ImageHeight(smaller)-1) + 1);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 2, ImageHeight(smaller) - 2, ImageGetPixel(smaller, ImageWidth(smaller)-2, ImageHeight(smaller)-2) - 1);
+    printf("# Image Sublocate - Big %dx%d | Small 3x3\n", window, window);
+    InstrReset();
+    ImageLocateSubImage(image, &px, &py, smaller);
+    if (old_count != 0){
+      new_count = PIXMEM;
+      division = (long double) new_count/ (long double) old_count;
+    }
+    old_count = PIXMEM;
+    if (old_comps != 0){
+      new_comps = PIXCOMP;
+      division_comps = (long double) new_comps/ (long double) old_comps;
+    }
+    old_comps = PIXCOMP;
+    InstrPrint();
+    ImageDestroy(&image);
+    ImageDestroy(&smaller);
+    printf("PIXMEM 4n/n == %f\n", division);
+    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+  }
 
+  printf("Analysis of smaller image size in time complexity (Bigger Image 800x800 / Smaller Image 2x2 - 512x512)\n");
+  for (int window = 2; window <= 512; window*=2){
+    Image image = ImageCreate(800, 800, PixMax);
+    Image smaller = ImageCreate(window,window,PixMax);
+    MassSetting(image, 100);
+    MassSetting(smaller, 100);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-1) - 1);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 2, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-2) + 1);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 2, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-2, ImageHeight(smaller)-1) + 1);
+    ImageSetPixel(smaller, ImageWidth(smaller) - 2, ImageHeight(smaller) - 2, ImageGetPixel(smaller, ImageWidth(smaller)-2, ImageHeight(smaller)-2) - 1);
+    printf("# Image Sublocate - Big 800x800 | Small %dx%d\n", window, window);
+    InstrReset();
+    ImageLocateSubImage(image, &px, &py, smaller);
+    if (old_count != 0){
+      new_count = PIXMEM;
+      division = (long double) new_count/ (long double) old_count;
+    }
+    old_count = PIXMEM;
+    if (old_comps != 0){
+      new_comps = PIXCOMP;
+      division_comps = (long double) new_comps/ (long double) old_comps;
+    }
+    old_comps = PIXCOMP;
+    InstrPrint();
+    ImageDestroy(&image);
+    ImageDestroy(&smaller);
+    printf("PIXMEM 4n/n == %f\n", division);
+    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+  }
+
+  
+
+//a
 
 }
 

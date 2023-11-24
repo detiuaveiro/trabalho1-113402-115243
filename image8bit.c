@@ -166,6 +166,7 @@ void ImageInit(void) { ///
   InstrCalibrate();
   InstrName[0] = "pixmem"; // InstrCount[0] will count pixel array acesses
   InstrName[1] = "pixcomp"; // InstrCount[1] will count pixel array comparisons
+  InstrName[2] = "iter"; // InstrCount[2] will count any array comparisons that has to do with pixels (aka summation tables)
   // Name other counters here...
   
 }
@@ -173,6 +174,7 @@ void ImageInit(void) { ///
 // Macros to simplify accessing instrumentation counters:
 #define PIXMEM InstrCount[0]
 #define PIXCOMP InstrCount[1]
+#define ITER InstrCount[2]
 // Add more macros here...
 
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
@@ -192,7 +194,7 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (width >= 0);
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
-  Image image = (Image)malloc(sizeof(Image)); //allocated memory for image
+  Image image = malloc(sizeof(struct image)); //allocated memory for image
   if(check(image != NULL, "Failed memory allocation")){ //checks if allocation was successful
 
     image->width = width;
@@ -222,7 +224,7 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 void ImageDestroy(Image* imgp) { ///frees everything
   assert (imgp != NULL);
   free((*imgp)->pixel);
-  free((*imgp));
+  free(*imgp);
 }
 
 
@@ -565,12 +567,48 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
 /// Compare an image to a subimage of a larger image.
 /// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
 /// Returns 0, otherwise.
+int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
+  assert (img1 != NULL);
+  assert (img2 != NULL);
+  assert (ImageValidPos(img1, x, y));
+  for (int xa = img2->width - 1; xa >= 0; xa--){
+    ITER++;
+    int x1 = xa + x;
+    int y1 = y + ImageHeight(img2) - 1;
+    int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
+    if (value1 != valuesum2[G(img2, xa, img2->height - 1)]){
+      return 0;
+    }
+  }
+  for (int ya = img2->height - 1; ya >= 0 ; ya--){
+    ITER++;
+    int x1 = x + ImageWidth(img2) - 1;
+    int y1 = y + ya;
+    int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
+    if (value1 != valuesum2[G(img2, img2->width - 1, ya)]){
+      return 0;
+    }
+  }
+
+  for (int xa = 0; xa<img2->width; xa++){
+    for (int ya = 0; ya<img2->height; ya++){
+      ITER++;
+      PIXCOMP++;
+      if (ImageGetPixel(img2,xa,ya) != ImageGetPixel(img1, xa+x, ya+y)){
+        return 0;
+      }
+    }
+  }  
+  return 1;
+}
+
 int OldImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
   for (int xa = 0; xa<img2->width; xa++){
     for (int ya = 0; ya<img2->height; ya++){
+      ITER++;
       PIXCOMP++;
       if (ImageGetPixel(img2,xa,ya) != ImageGetPixel(img1, xa+x, ya+y)){
         return 0;
@@ -580,28 +618,6 @@ int OldImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   return 1;
 }
 
-int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
-  assert (img1 != NULL);
-  assert (img2 != NULL);
-  assert (ImageValidPos(img1, x, y));
-  for (int xa = img2->width - 1; xa >= 0; xa--){
-    int x1 = xa + x;
-    int y1 = y + ImageHeight(img2) - 1;
-    int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
-    if (value1 != valuesum2[G(img2, xa, img2->height - 1)]){
-      return 0;
-    }
-  }
-  for (int ya = img2->height - 1; ya >= 0 ; ya--){
-    int x1 = x + ImageWidth(img2) - 1;
-    int y1 = y + ya;
-    int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
-    if (value1 != valuesum2[G(img2, img2->width - 1, ya)]){
-      return 0;
-    }
-  }
-  return 1;
-}
 
 int OldImageLocateSubImage(Image img1, int* px, int* py, Image img2) {
   assert (img1 != NULL);
@@ -628,28 +644,32 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   InitializeSum1(img1);
   for (int x = 0; x < img1->width; x++){
     for (int y = 0; y < img1->height; y++){
-      valuesum1[G(img1, x, y)] = pow((int)ImageGetPixel(img1, x, y),2) + ((x > 0) ? valuesum1[G(img1, x-1, y)] : 0) + ((y > 0) ? valuesum1[G(img1, x, y-1)] : 0) - ((x > 0 && y > 0) ? valuesum1[G(img1, x-1, y-1)] : 0);
+      ITER++;
+      valuesum1[G(img1, x, y)] = (int)ImageGetPixel(img1, x, y) + ((x > 0) ? valuesum1[G(img1, x-1, y)] : 0) + ((y > 0) ? valuesum1[G(img1, x, y-1)] : 0) - ((x > 0 && y > 0) ? valuesum1[G(img1, x-1, y-1)] : 0);
     }
   }
 
   InitializeSum2(img2);
   for (int x2 = 0; x2 < img2->width; x2++){
     for (int y2 = 0; y2 < img2->height; y2++){
-      valuesum2[G(img2, x2, y2)] = pow((int)ImageGetPixel(img2, x2, y2),2) + ((x2 > 0) ? valuesum2[G(img2, x2-1, y2)] : 0) + ((y2 > 0) ? valuesum2[G(img2, x2, y2-1)] : 0) - ((x2 > 0 && y2 > 0) ? valuesum2[G(img2, x2-1, y2-1)] : 0);
+      ITER++;
+      valuesum2[G(img2, x2, y2)] = ImageGetPixel(img2, x2, y2) + ((x2 > 0) ? valuesum2[G(img2, x2-1, y2)] : 0) + ((y2 > 0) ? valuesum2[G(img2, x2, y2-1)] : 0) - ((x2 > 0 && y2 > 0) ? valuesum2[G(img2, x2-1, y2-1)] : 0);
     }
   }
 
   for (int xa = 0; xa<img1->width - img2->width + 1; xa++){
     for (int ya = 0; ya<img1->height - img2->height + 1; ya++){
       if (ImageMatchSubImage(img1, xa, ya, img2)){
-        if (OldImageMatchSubImage(img1, xa, ya, img2)){
           *px = xa;
           *py = ya;
+          free(valuesum1);
+          free(valuesum2);
           return 1;
-        }
       }
     }
   }
+  free(valuesum1);
+  free(valuesum2);
   return 0;
 }
 
@@ -672,6 +692,7 @@ void ImageOldBlur(Image img, int dx, int dy) {
       for (int xa = x - dx; xa <= x + dx; xa++){
         for (int ya = y - dy; ya <= y + dy; ya++ ){
           PIXCOMP++;
+          ITER++;
           if (ImageValidPos(img, xa, ya)){
             sum += ImageGetPixel(imgaux, xa, ya);
             count += 1;
@@ -681,6 +702,7 @@ void ImageOldBlur(Image img, int dx, int dy) {
       ImageSetPixel(img, x, y, (sum + count/2)/count);
     }
   }
+  ImageDestroy(&imgaux);
 }
 
 void ImageBlur(Image img, int dx, int dy) {
@@ -690,11 +712,13 @@ void ImageBlur(Image img, int dx, int dy) {
   if(check(valuesum != NULL, "Failed memory allocation")){
     for (int x = 0; x < img->width; x++){
       for (int y = 0; y < img->height; y++){
+        ITER++;
         valuesum[G(img, x, y)] = (int)ImageGetPixel(img, x, y) + ((x > 0) ? valuesum[G(img, x-1, y)] : 0) + ((y > 0) ? valuesum[G(img, x, y-1)] : 0) - ((x > 0 && y > 0) ? valuesum[G(img, x-1, y-1)] : 0);
       }
     }
     for (int x = 0; x < img->width; x++){
       for (int y = 0; y < img->height; y++){
+        ITER++;
         xstart = MAX(x - dx, 0);
         ystart = MAX(y - dy, 0);
         xend = MIN(x + dx, img->width-1);
@@ -708,7 +732,5 @@ void ImageBlur(Image img, int dx, int dy) {
       }
     }
   }
-  else {
-    free(valuesum);
-  }
+  free(valuesum);
 }
