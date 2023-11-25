@@ -53,6 +53,7 @@ int main(int argc, char* argv[]) {
   double division_iters = 0;
 
 
+
   ImageInit();
   /*printf("OLD BLUR ANALYSIS\n");
 
@@ -72,13 +73,21 @@ int main(int argc, char* argv[]) {
       division_comps = (long double) new_comps/ (long double) old_comps;
     }
     old_comps = PIXCOMP;
+    if (old_iters != 0){
+      new_iters = ITER;
+      division_iters = (long double) new_iters/ (long double) old_iters;
+    }
+    old_iters = ITER;
     InstrPrint();
     printf("PIXMEM 4n/n == %f\n", division);
-    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    printf("PIXCOMPS 4n/n == %f\n", division_comps);
+    printf("ITERS 4n/n == %f\n\n", division_iters);
+    fflush(stdout);
   }
 
   new_count = 0, old_count = 0, division = 0;
   new_comps = 0, old_comps = 0, division_comps = 0;
+  new_iters = 0, old_iters = 0, division_iters = 0;
 
   printf("Analysis of window size in time complexity (Window 1x1-128x128 / Image 1000x1000)\n");
   for (int window = 1; window <= 200; window*=2){
@@ -96,16 +105,24 @@ int main(int argc, char* argv[]) {
       division_comps = (long double) new_comps/ (long double) old_comps;
     }
     old_comps = PIXCOMP;
+    if (old_iters != 0){
+      new_iters = ITER;
+      division_iters = (long double) new_iters/ (long double) old_iters;
+    }
+    old_iters = ITER;
     InstrPrint();
     ImageDestroy(&image);
     printf("PIXMEM 4n/n == %f\n", division);
-    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    printf("PIXCOMPS 4n/n == %f\n", division_comps);
+    printf("ITERS 4n/n == %f\n\n", division_iters);
+    fflush(stdout);
   }
 
   printf("\n----------\n\nNEW BLUR ANALYSIS\n");
 
   new_count = 0, old_count = 0, division = 0;
   new_comps = 0, old_comps = 0, division_comps = 0;
+  new_iters = 0, old_iters = 0, division_iters = 0;
 
   printf("Analysis of image size in time complexity (Window 5x5 / Image 5x5 - 1280x1280)\n");
   for (int window = 5; window <= 2560; window*=2){
@@ -123,15 +140,22 @@ int main(int argc, char* argv[]) {
       division_comps = (long double) new_comps/ (long double) old_comps;
     }
     old_comps = PIXCOMP;
+    if (old_iters != 0){
+      new_iters = ITER;
+      division_iters = (long double) new_iters/ (long double) old_iters;
+    }
+    old_iters = ITER;
     InstrPrint();
     ImageDestroy(&image);
     printf("PIXMEM 4n/n == %f\n", division);
-    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    printf("PIXCOMPS 4n/n == %f\n", division_comps);
+    printf("ITERS 4n/n == %f\n\n", division_iters);
     fflush(stdout);
   }
 
   new_count = 0, old_count = 0, division = 0;
   new_comps = 0, old_comps = 0, division_comps = 0;
+  new_iters = 0, old_iters = 0, division_iters = 0;
 
   printf("Analysis of window size in time complexity (Window 1x1 - 512x512 / Image 1000x1000)\n");
   for (int window = 1; window <= 1000; window*=2){
@@ -149,10 +173,16 @@ int main(int argc, char* argv[]) {
       division_comps = (long double) new_comps/ (long double) old_comps;
     }
     old_comps = PIXCOMP;
+    if (old_iters != 0){
+      new_iters = ITER;
+      division_iters = (long double) new_iters/ (long double) old_iters;
+    }
+    old_iters = ITER;
     InstrPrint();
     ImageDestroy(&image);
     printf("PIXMEM 4n/n == %f\n", division);
-    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    printf("PIXCOMPS 4n/n == %f\n", division_comps);
+    printf("ITERS 4n/n == %f\n\n", division_iters);
     fflush(stdout);
   }
 
@@ -177,11 +207,18 @@ int main(int argc, char* argv[]) {
       division_comps = (long double) new_comps/ (long double) old_comps;
     }
     old_comps = PIXCOMP;
+    if (old_iters != 0){
+      new_iters = ITER;
+      division_iters = (long double) new_iters/ (long double) old_iters;
+    }
+    old_iters = ITER;
     InstrPrint();
     ImageDestroy(&image);
     ImageDestroy(&smaller);
     printf("PIXMEM 4n/n == %f\n", division);
-    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    printf("PIXCOMPS 4n/n == %f\n", division_comps);
+    printf("ITERS 4n/n == %f\n\n", division_iters);
+    fflush(stdout);
   }
 
   printf("Analysis of smaller image size in time complexity (Bigger Image 800x800 / Smaller Image 1x1 - 512x512)\n");
@@ -204,16 +241,27 @@ int main(int argc, char* argv[]) {
       division_comps = (long double) new_comps/ (long double) old_comps;
     }
     old_comps = PIXCOMP;
+    if (old_iters != 0){
+      new_iters = ITER;
+      division_iters = (long double) new_iters/ (long double) old_iters;
+    }
+    old_iters = ITER;
     InstrPrint();
     ImageDestroy(&image);
     ImageDestroy(&smaller);
     printf("PIXMEM 4n/n == %f\n", division);
-    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    printf("PIXCOMPS 4n/n == %f\n", division_comps);
+    printf("ITERS 4n/n == %f\n\n", division_iters);
+    fflush(stdout);
   }
-  */
   printf("\n----------\n\nNEW IMAGE SUBLOCATE ANALYSIS\n");
 
   printf("Analysis of bigger image size in time complexity (Bigger Image 5x5 - 1280x1280 / Smaller Image 3x3)\n");
+
+  new_count = 0, old_count = 0, division = 0;
+  new_comps = 0, old_comps = 0, division_comps = 0;
+  new_iters = 0, old_iters = 0, division_iters = 0;
+
   for (int window = 5; window <= 1280; window*=2){
     Image image = ImageCreate(window, window, PixMax);
     Image smaller = ImageCreate(3,3,PixMax);
@@ -247,10 +295,56 @@ int main(int argc, char* argv[]) {
     printf("PIXMEM 4n/n == %f\n", division);
     printf("PIXCOMPS 4n/n == %f\n", division_comps);
     printf("ITERS 4n/n == %f\n\n", division_iters);
-  }
+    fflush(stdout);
+  }*/
 
   printf("Analysis of smaller image size in time complexity (Bigger Image 800x800 / Smaller Image 2x2 - 512x512)\n");
-  for (int window = 2; window <= 512; window*=2){
+
+  new_count = 0, old_count = 0, division = 0;
+  new_comps = 0, old_comps = 0, division_comps = 0;
+  new_iters = 0, old_iters = 0, division_iters = 0;
+  for (int window = 2; window <= 5000; window*=2){
+    Image image = ImageCreate(10000, 10000, PixMax);
+    Image smaller = ImageCreate(window,window,PixMax);
+    MassSetting(image, 100);
+    MassSetting(smaller, 100);
+    ImageSetPixel(smaller, 0, 0, ImageGetPixel(smaller, 0, 0) - 1);
+    ImageSetPixel(smaller, 0, 1, ImageGetPixel(smaller, 0, 1) + 1);
+    ImageSetPixel(smaller, 1, 0, ImageGetPixel(smaller, 1, 0) + 1);
+    ImageSetPixel(smaller, 1, 1, ImageGetPixel(smaller, 1, 1) - 1);
+    printf("# Image Sublocate - Big 800x800 | Small %dx%d\n", window, window);
+    InstrReset();
+    ImageLocateSubImage(image, &px, &py, smaller);
+    if (old_count != 0){
+      new_count = PIXMEM;
+      division = (long double) new_count/ (long double) old_count;
+    }
+    old_count = PIXMEM;
+    if (old_comps != 0){
+      new_comps = PIXCOMP;
+      division_comps = (long double) new_comps/ (long double) old_comps;
+    }
+    old_comps = PIXCOMP;
+    if (old_iters != 0){
+      new_iters = ITER;
+      division_iters = (long double) new_iters/ (long double) old_iters;
+    }
+    old_iters = ITER;
+    InstrPrint();
+    ImageDestroy(&image);
+    ImageDestroy(&smaller);
+    printf("PIXMEM 4n/n == %f\n", division);
+    printf("PIXCOMPS 4n/n == %f\n", division_comps);
+    printf("ITERS 4n/n == %f\n\n", division_iters);
+    fflush(stdout);
+  }
+
+  printf("Finding most complicated img2 size (Bigger Image 800x800 / Smaller Image 256x256 - 512x512)\n");
+
+  new_count = 0, old_count = 0, division = 0;
+  new_comps = 0, old_comps = 0, division_comps = 0;
+  new_iters = 0, old_iters = 0, division_iters = 0;
+  for (int window = 256; window <= 512; window+=10){
     Image image = ImageCreate(800, 800, PixMax);
     Image smaller = ImageCreate(window,window,PixMax);
     MassSetting(image, 100);
@@ -283,6 +377,7 @@ int main(int argc, char* argv[]) {
     printf("PIXMEM 4n/n == %f\n", division);
     printf("PIXCOMPS 4n/n == %f\n", division_comps);
     printf("ITERS 4n/n == %f\n\n", division_iters);
+    fflush(stdout);
   }
 
   
