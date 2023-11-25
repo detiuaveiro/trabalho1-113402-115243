@@ -21,6 +21,7 @@
 
 #define PIXMEM InstrCount[0]
 #define PIXCOMP InstrCount[1]
+#define ITER InstrCount[2]
 
 void MassSetting(Image img, uint8 value){
   for (int x = 0; x < ImageWidth(img); x++){
@@ -47,9 +48,13 @@ int main(int argc, char* argv[]) {
   long long int new_comps = 0;
   double division_comps = 0;
 
+  long long int old_iters = 0;
+  long long int new_iters = 0;
+  double division_iters = 0;
+
 
   ImageInit();
-  printf("OLD BLUR ANALYSIS\n");
+  /*printf("OLD BLUR ANALYSIS\n");
 
   printf("Analysis of image size in time complexity (Window 5x5 / Image 5x5 - 1280x1280)\n");
   for (int window = 5; window <= 2560; window*=2){
@@ -205,7 +210,7 @@ int main(int argc, char* argv[]) {
     printf("PIXMEM 4n/n == %f\n", division);
     printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
   }
-
+  */
   printf("\n----------\n\nNEW IMAGE SUBLOCATE ANALYSIS\n");
 
   printf("Analysis of bigger image size in time complexity (Bigger Image 5x5 - 1280x1280 / Smaller Image 3x3)\n");
@@ -230,12 +235,18 @@ int main(int argc, char* argv[]) {
       new_comps = PIXCOMP;
       division_comps = (long double) new_comps/ (long double) old_comps;
     }
-    old_comps = PIXCOMP;
+    old_comps = ITER;
+    if (old_iters != 0){
+      new_iters = ITER;
+      division_iters = (long double) new_iters/ (long double) old_iters;
+    }
+    old_iters = ITER;
     InstrPrint();
     ImageDestroy(&image);
     ImageDestroy(&smaller);
     printf("PIXMEM 4n/n == %f\n", division);
-    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    printf("PIXCOMPS 4n/n == %f\n", division_comps);
+    printf("ITERS 4n/n == %f\n\n", division_iters);
   }
 
   printf("Analysis of smaller image size in time complexity (Bigger Image 800x800 / Smaller Image 2x2 - 512x512)\n");
@@ -244,10 +255,10 @@ int main(int argc, char* argv[]) {
     Image smaller = ImageCreate(window,window,PixMax);
     MassSetting(image, 100);
     MassSetting(smaller, 100);
-    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-1) - 1);
-    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 2, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-2) + 1);
-    ImageSetPixel(smaller, ImageWidth(smaller) - 2, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-2, ImageHeight(smaller)-1) + 1);
-    ImageSetPixel(smaller, ImageWidth(smaller) - 2, ImageHeight(smaller) - 2, ImageGetPixel(smaller, ImageWidth(smaller)-2, ImageHeight(smaller)-2) - 1);
+    ImageSetPixel(smaller, 0, 0, ImageGetPixel(smaller, 0, 0) - 1);
+    ImageSetPixel(smaller, 0, 1, ImageGetPixel(smaller, 0, 1) + 1);
+    ImageSetPixel(smaller, 1, 0, ImageGetPixel(smaller, 1, 0) + 1);
+    ImageSetPixel(smaller, 1, 1, ImageGetPixel(smaller, 1, 1) - 1);
     printf("# Image Sublocate - Big 800x800 | Small %dx%d\n", window, window);
     InstrReset();
     ImageLocateSubImage(image, &px, &py, smaller);
@@ -261,11 +272,17 @@ int main(int argc, char* argv[]) {
       division_comps = (long double) new_comps/ (long double) old_comps;
     }
     old_comps = PIXCOMP;
+    if (old_iters != 0){
+      new_iters = ITER;
+      division_iters = (long double) new_iters/ (long double) old_iters;
+    }
+    old_iters = ITER;
     InstrPrint();
     ImageDestroy(&image);
     ImageDestroy(&smaller);
     printf("PIXMEM 4n/n == %f\n", division);
-    printf("PIXCOMPS 4n/n == %f\n\n", division_comps);
+    printf("PIXCOMPS 4n/n == %f\n", division_comps);
+    printf("ITERS 4n/n == %f\n\n", division_iters);
   }
 
   

@@ -60,8 +60,8 @@ struct image {
   uint8* pixel; // pixel data (a raster scan)
 };
 
-int* valuesum1;
-int* valuesum2;
+int* valuesum1 = NULL;
+int* valuesum2 = NULL;
 
 static void InitializeSum1(Image img){
   valuesum1 = (int*) malloc(sizeof(int*) * img->height * img->width);
@@ -559,7 +559,8 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   for (int xa = 0; xa<img2->width; xa++){
     for (int ya = 0; ya<img2->height; ya++){
       PIXMEM++;
-      img1->pixel[G(img1, xa + x, ya + y)] = ImageGetPixel(img2,xa,ya)*alpha + ImageGetPixel(img1, xa + x, ya + y)*(1-alpha) + 0.5;
+      img1->pixel[G(img1, xa + x, ya + y)] = MIN(MAX(ImageGetPixel(img2,xa,ya)*alpha + ImageGetPixel(img1, xa + x, ya + y)*(1-alpha) + 0.5, 0),img1->maxval);
+      //MAX(value,0) will return 0 if an underflow occured. MIN(value, img1->maxval) will return img1->maxval if an overflow occured. value is either smaller than 0 or greater than maxval, therefore this is enough to handle both overflow and underflow.
     }
   }
 }
@@ -571,35 +572,57 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
+  /*
+    In a summation table, every pixel is accounted for in the area between the squares (0,0), (x,0), (0,y) and (x,y)
+    By comparing the values of the summation table instead of the pixels themselves we will find differences much faster if there are any.
+    Usually we would only have to check the last row and columns to check if the images are the same.
+    However, it is possible for img2 to fool this system by having 4 pixels of which there are 2 in the same row or column and the average of any 2 of them (from a row / column perspective) is the same as the squares that should be there.
+    For example, if every pixel is 100 except a square of 4 pixels in img2 in which their values are 99, 101, 101 and 99 (from left to right and from up to bottom), this would trick the system if we only go through the last row and column.
+    In a worst case scenario we always have to check every square, but this way, by using global arrays and adjusting the values of the summation table of img1,
+    not only do we access values much faster, we also increase the chance of detection of a difference in the image much sooner, which in a normal image will almost always mean immediate detection of a difference.
+
+    If a summation table is not available (for example, if for some reason this function has been called independently from ImageLocateSubImage) then checking every pixel is the best option, but this is only a backup.
+    Usually this function will always be called with ImageLocateSubImage
+  */
+
+  //iterating through the last row of the summation table.
   for (int xa = img2->width - 1; xa >= 0; xa--){
     ITER++;
     int x1 = xa + x;
     int y1 = y + ImageHeight(img2) - 1;
+    //We calculate the sum of the img1 pixels for the same area that we want for img2, having in account the x and y variables though. Below this method will be explained.
     int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
     if (value1 != valuesum2[G(img2, xa, img2->height - 1)]){
       return 0;
     }
   }
-  for (int ya = img2->height - 1; ya >= 0 ; ya--){
+  
+  //iterating through the last column of the summation table.
+  for (int ya = img2->height - 2; ya >= 0 ; ya--){
     ITER++;
     int x1 = x + ImageWidth(img2) - 1;
     int y1 = y + ya;
+    //We calculate the sum of the img1 pixels for the same area that we want for img2, having in account the x and y variables though. Below this method will be explained.
     int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
     if (value1 != valuesum2[G(img2, img2->width - 1, ya)]){
       return 0;
     }
   }
-
-  for (int xa = 0; xa<img2->width; xa++){
-    for (int ya = 0; ya<img2->height; ya++){
-      ITER++;
-      PIXCOMP++;
-      if (ImageGetPixel(img2,xa,ya) != ImageGetPixel(img1, xa+x, ya+y)){
-        return 0;
-      }
-    }
-  }  
-  return 1;
+  
+  //If the test passes, it could have been fooled. So we will call the function recursively by reducing the height and width of img2. We restore that value before leaving the function though.
+  //The summation table is not affected by this, so we can reuse it. We aren't creating a different image that we would need to destroy either.
+  int width = ImageWidth(img2);
+  int height = ImageHeight(img2);
+  if (width * height == 1){
+    return 1;
+  }
+  img2->width = (width > 1) ? width - 1 : 1;
+  img2->height = (height > 1) ? height - 1 : 1;
+  //we don't return the output immediatly so that we can restore the width and height of img2
+  int res = ImageMatchSubImage(img1, x, y, img2);
+  img2->width = width;
+  img2->height = height;
+  return res;
 }
 
 int OldImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
@@ -641,7 +664,8 @@ int OldImageLocateSubImage(Image img1, int* px, int* py, Image img2) {
 int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
-  InitializeSum1(img1);
+  InitializeSum1(img1); //allocates correct memory for summation table
+  //Creation of summation table for image 1. See below to see what a summation table is. We put it in a global array so that we only have to calculate this once.
   for (int x = 0; x < img1->width; x++){
     for (int y = 0; y < img1->height; y++){
       ITER++;
@@ -649,27 +673,45 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
     }
   }
 
-  InitializeSum2(img2);
+  InitializeSum2(img2); //allocates correct memory for summation table
+  //Creation of summation table for image 2. See below to see what a summation table is. We put it in a global array so that we only have to calculate this once.
   for (int x2 = 0; x2 < img2->width; x2++){
     for (int y2 = 0; y2 < img2->height; y2++){
       ITER++;
-      valuesum2[G(img2, x2, y2)] = ImageGetPixel(img2, x2, y2) + ((x2 > 0) ? valuesum2[G(img2, x2-1, y2)] : 0) + ((y2 > 0) ? valuesum2[G(img2, x2, y2-1)] : 0) - ((x2 > 0 && y2 > 0) ? valuesum2[G(img2, x2-1, y2-1)] : 0);
+      valuesum2[G(img2, x2, y2)] = (int)ImageGetPixel(img2, x2, y2) + ((x2 > 0) ? valuesum2[G(img2, x2-1, y2)] : 0) + ((y2 > 0) ? valuesum2[G(img2, x2, y2-1)] : 0) - ((x2 > 0 && y2 > 0) ? valuesum2[G(img2, x2-1, y2-1)] : 0);
     }
   }
 
   for (int xa = 0; xa<img1->width - img2->width + 1; xa++){
     for (int ya = 0; ya<img1->height - img2->height + 1; ya++){
+      //iterates through every possible starting point for img2
+      //         _ _ _ _ _ _
+      //        |_|_|_|_|X|X|
+      //        |_|_|_|_|X|X|
+      //        |_|_|_|_|X|X|
+      //        |_|_|_|_|X|X|
+      //        |X|X|X|X|X|X|
+      //        |X|X|X|X|X|X|
+      //
+      //If img2 is 3x3 then we know for sure that the first pixel could never be in the area marked with X. 
+      //We avoid going out of bounds this way as well so we don't need to check if posititons are correct.
       if (ImageMatchSubImage(img1, xa, ya, img2)){
           *px = xa;
           *py = ya;
+          //We cannot reuse the summation tables for further function calls. The image could have been changed by then, or a different img2 could be used.
+          //They need to be deleted and remade every time this function is called.
           free(valuesum1);
           free(valuesum2);
+          valuesum1 = NULL;
+          valuesum2 = NULL;
           return 1;
       }
     }
   }
   free(valuesum1);
   free(valuesum2);
+  valuesum1 = NULL;
+  valuesum2 = NULL;
   return 0;
 }
 
@@ -705,17 +747,51 @@ void ImageOldBlur(Image img, int dx, int dy) {
   ImageDestroy(&imgaux);
 }
 
+/*
+  Both ImageBlur and ImageLocateSubImage use a summation table to represent images in a different way.
+  The value at position (x,y) is the sum of all the pixels in the square between (0,0) and (x,y).
+  We can fill the array using dynamic programming. We start at (0,0) and go through every position, by adding both the values to the left and up and subtracting the value in the NW diagonal.
+  We do this because when we added the values of the positions above and in the left, we added the pixel values of the (0,0) -> (x-1, y-1) square twice, so we need to remove them again.
+  If we are on the first row or column we have to make sure we are not trying to add values that are out of bounds. If the index we are trying to access is out of bounds, we add / subtract 0 instead.
+
+  If we want to access a sum of certain pixels that are together, we can easily do that by adding the value at the end of the range we want, then subtracting the value on the left (plus the horizontal range)
+  and the one above (plus the vertical range). We subtracted some values twice so we need to add them again. The concept is similar to when we build the table.
+         _ _ _ _ _ _
+        |_|_|_|_|_|_|
+        |_|-|+|_|_|_|
+        |_|+|O|_|_|_|
+        |_|_|_|_|_|_|
+        |_|_|_|_|_|_|
+        |_|_|_|_|_|_|
+
+  To get the value of O in the summation table, we add / subtract the values shown on the table
+         _ _ _ _ _ _ 
+        |_|_|_|_|_|_|
+        |_|+|_|-|_|_|
+        |_|_|O|O|_|_|
+        |_|-|O|S|_|_|
+        |_|_|_|_|_|_|
+        |_|_|_|_|_|_|
+
+  To get the sum of values marked with O (and S) we add the square marked with S and the one with + and subtract the ones marked with -.
+  We can use this to calculate blur values more efficiently.
+*/
+
 void ImageBlur(Image img, int dx, int dy) {
   int* valuesum;
   int blurval, xstart, xend, ystart, yend, xlen, ylen, count;
   valuesum = (int*) malloc(sizeof(int*) * img->height * img->width);
+  //We do need to handle not being able to allocate memory for the summation table
   if(check(valuesum != NULL, "Failed memory allocation")){
+    //Building the summation table
     for (int x = 0; x < img->width; x++){
       for (int y = 0; y < img->height; y++){
         ITER++;
         valuesum[G(img, x, y)] = (int)ImageGetPixel(img, x, y) + ((x > 0) ? valuesum[G(img, x-1, y)] : 0) + ((y > 0) ? valuesum[G(img, x, y-1)] : 0) - ((x > 0 && y > 0) ? valuesum[G(img, x-1, y-1)] : 0);
       }
     }
+    //Iterating through the summation table to find which values to set each pixel with.
+    //We also need to check if a pixel is in a border to calculate the average adequately.
     for (int x = 0; x < img->width; x++){
       for (int y = 0; y < img->height; y++){
         ITER++;
@@ -732,5 +808,6 @@ void ImageBlur(Image img, int dx, int dy) {
       }
     }
   }
+  //We need to free the summation table to avoid memory leaks.
   free(valuesum);
 }
