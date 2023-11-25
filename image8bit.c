@@ -22,6 +22,7 @@
 
 #include "image8bit.h"
 
+#include <string.h>
 #include <math.h>
 #include <assert.h>
 #define NDEBUG
@@ -586,43 +587,34 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   */
 
   //iterating through the last row of the summation table.
-  for (int xa = img2->width - 1; xa >= 0; xa--){
-    ITER++;
-    int x1 = xa + x;
-    int y1 = y + ImageHeight(img2) - 1;
-    //We calculate the sum of the img1 pixels for the same area that we want for img2, having in account the x and y variables though. Below this method will be explained.
-    int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
-    if (value1 != valuesum2[G(img2, xa, img2->height - 1)]){
-      return 0;
+  for(int i = 1; i < MAX(ImageWidth(img2), ImageHeight(img1)); i++){
+    for (int xa = img2->width - i; xa >= 0; xa--){
+      ITER++;
+      int x1 = xa + x;
+      int y1 = y + ImageHeight(img2) - 1;
+      //We calculate the sum of the img1 pixels for the same area that we want for img2, having in account the x and y variables though. Below this method will be explained.
+      int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
+      PIXCOMP++;
+      if (value1 != valuesum2[G(img2, xa, img2->height - 1)]){
+        return 0;
+      }
+    }
+    
+    //iterating through the last column of the summation table.
+    for (int ya = img2->height - i - 1; ya >= 0 ; ya--){
+      ITER++;
+      int x1 = x + ImageWidth(img2) - 1;
+      int y1 = y + ya;
+      //We calculate the sum of the img1 pixels for the same area that we want for img2, having in account the x and y variables though. Below this method will be explained.
+      int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
+      PIXCOMP++;
+      if (value1 != valuesum2[G(img2, img2->width - 1, ya)]){
+        return 0;
+      }
     }
   }
   
-  //iterating through the last column of the summation table.
-  for (int ya = img2->height - 2; ya >= 0 ; ya--){
-    ITER++;
-    int x1 = x + ImageWidth(img2) - 1;
-    int y1 = y + ya;
-    //We calculate the sum of the img1 pixels for the same area that we want for img2, having in account the x and y variables though. Below this method will be explained.
-    int value1 = valuesum1[G(img1, x1, y1)] - ((x>0) ? valuesum1[G(img1, x-1, y1)] : 0) - ((y>0) ? valuesum1[G(img1, x1, y - 1)] : 0) + ((x>0 && y>0) ? valuesum1[G(img1, x - 1, y - 1)] : 0);
-    if (value1 != valuesum2[G(img2, img2->width - 1, ya)]){
-      return 0;
-    }
-  }
-  
-  //If the test passes, it could have been fooled. So we will call the function recursively by reducing the height and width of img2. We restore that value before leaving the function though.
-  //The summation table is not affected by this, so we can reuse it. We aren't creating a different image that we would need to destroy either.
-  int width = ImageWidth(img2);
-  int height = ImageHeight(img2);
-  if (width * height == 1){
-    return 1;
-  }
-  img2->width = (width > 1) ? width - 1 : 1;
-  img2->height = (height > 1) ? height - 1 : 1;
-  //we don't return the output immediatly so that we can restore the width and height of img2
-  int res = ImageMatchSubImage(img1, x, y, img2);
-  img2->width = width;
-  img2->height = height;
-  return res;
+  return 1;
 }
 
 int OldImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
@@ -714,6 +706,8 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   valuesum2 = NULL;
   return 0;
 }
+
+
 
 
 /// Filtering

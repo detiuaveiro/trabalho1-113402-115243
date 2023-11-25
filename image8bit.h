@@ -206,6 +206,7 @@ int OldImageMatchSubImage(Image img1, int x, int y, Image img2) ;
 /// If no match is found, returns 0 and (*px, *py) are left untouched.
 int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) ;
 int OldImageLocateSubImage(Image img1, int* px, int* py, Image img2) ;
+int NewImageLocateSubImage(Image img1, int* px, int* py, Image img2) ;
 
 /// Filtering
 

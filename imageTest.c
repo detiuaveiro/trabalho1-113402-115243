@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 
 
   ImageInit();
-  /*printf("OLD BLUR ANALYSIS\n");
+  printf("OLD BLUR ANALYSIS\n");
 
   printf("Analysis of image size in time complexity (Window 5x5 / Image 5x5 - 1280x1280)\n");
   for (int window = 5; window <= 2560; window*=2){
@@ -296,7 +296,7 @@ int main(int argc, char* argv[]) {
     printf("PIXCOMPS 4n/n == %f\n", division_comps);
     printf("ITERS 4n/n == %f\n\n", division_iters);
     fflush(stdout);
-  }*/
+  }
 
   printf("Analysis of smaller image size in time complexity (Bigger Image 800x800 / Smaller Image 2x2 - 512x512)\n");
 
@@ -456,5 +456,3 @@ int main(int argc, char* argv[]) {
 
   ImageDestroy(&img1);
   ImageDestroy(&img2);  */
-
-
