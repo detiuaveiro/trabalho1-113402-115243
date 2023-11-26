@@ -198,15 +198,12 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) ;
 /// Returns 1 (true) if img2 matches subimage of img1 at pos (x, y).
 /// Returns 0, otherwise.
 int ImageMatchSubImage(Image img1, int x, int y, Image img2) ;
-int OldImageMatchSubImage(Image img1, int x, int y, Image img2) ;
 
 /// Locate a subimage inside another image.
 /// Searches for img2 inside img1.
 /// If a match is found, returns 1 and matching position is set in vars (*px, *py).
 /// If no match is found, returns 0 and (*px, *py) are left untouched.
 int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) ;
-int OldImageLocateSubImage(Image img1, int* px, int* py, Image img2) ;
-int NewImageLocateSubImage(Image img1, int* px, int* py, Image img2) ;
 
 /// Filtering
 
@@ -215,6 +212,5 @@ int NewImageLocateSubImage(Image img1, int* px, int* py, Image img2) ;
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) ;
-void ImageOldBlur(Image img, int dx, int dy) ;
 
 #endif

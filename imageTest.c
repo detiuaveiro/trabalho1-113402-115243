@@ -186,17 +186,26 @@ int main(int argc, char* argv[]) {
     fflush(stdout);
   }*/
 
-  printf("\n==========================\n\nOLD IMAGE SUBLOCATE ANALYSIS\n");
+  Image image = ImageLoad(argv[1]);
+  Image smaller = ImageCrop(image, 1000, 1000, 30, 30);
+  printf("# Image Sublocate - Example on Original Image\n");
+  InstrReset();
+  int res = ImageLocateSubImage(image, &px, &py, smaller);
+  printf("%d\n", res);
+  InstrPrint();
+  InstrReset();
+  OldImageLocateSubImage(image, &px, &py, smaller);
+  InstrPrint();
+  ImageDestroy(&image);
+  ImageDestroy(&smaller);
+
+  /*printf("\n==========================\n\nOLD IMAGE SUBLOCATE ANALYSIS\n");
   printf("Analysis of bigger image size in time complexity (Bigger Image 5x5 - 1280x1280 / Smaller Image 3x3) BC\n");
   for (int window = 5; window <= 1280; window*=2){
-    Image image = ImageCreate(window, window, PixMax);
     Image smaller = ImageCreate(3,3,PixMax);
-    MassSetting(image, 100);
-    MassSetting(smaller, 100);
-    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-1) - 1);
     printf("# Image Sublocate - Big %dx%d | Small 3x3\n", window, window);
     InstrReset();
-    OldImageLocateSubImage(image, &px, &py, smaller);
+    ImageLocateSubImage(image, &px, &py, smaller);
     if (old_count != 0){
       new_count = PIXMEM;
       division = (long double) new_count/ (long double) old_count;
@@ -221,39 +230,6 @@ int main(int argc, char* argv[]) {
     fflush(stdout);
   }
 
-    printf("Analysis of bigger image size in time complexity (Bigger Image 5x5 - 1280x1280 / Smaller Image 3x3) WC\n");
-  for (int window = 5; window <= 1280; window*=2){
-    Image image = ImageCreate(window, window, PixMax);
-    Image smaller = ImageCreate(3,3,PixMax);
-    MassSetting(image, 100);
-    MassSetting(smaller, 100);
-    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-1) - 1);
-    printf("# Image Sublocate - Big %dx%d | Small 3x3\n", window, window);
-    InstrReset();
-    OldImageLocateSubImage(image, &px, &py, smaller);
-    if (old_count != 0){
-      new_count = PIXMEM;
-      division = (long double) new_count/ (long double) old_count;
-    }
-    old_count = PIXMEM;
-    if (old_comps != 0){
-      new_comps = PIXCOMP;
-      division_comps = (long double) new_comps/ (long double) old_comps;
-    }
-    old_comps = PIXCOMP;
-    if (old_iters != 0){
-      new_iters = ITER;
-      division_iters = (long double) new_iters/ (long double) old_iters;
-    }
-    old_iters = ITER;
-    InstrPrint();
-    ImageDestroy(&image);
-    ImageDestroy(&smaller);
-    printf("PIXMEM 4n/n == %f\n", division);
-    printf("PIXCOMPS 4n/n == %f\n", division_comps);
-    printf("ITERS 4n/n == %f\n\n", division_iters);
-    fflush(stdout);
-  }
 
   printf("Analysis of smaller image size in time complexity (Bigger Image 800x800 / Smaller Image 1x1 - 512x512)\n");
   for (int window = 1; window <= 512; window*=2){
@@ -261,10 +237,9 @@ int main(int argc, char* argv[]) {
     Image smaller = ImageCreate(window,window,PixMax);
     MassSetting(image, 100);
     MassSetting(smaller, 100);
-    ImageSetPixel(smaller, ImageWidth(smaller) - 1, ImageHeight(smaller) - 1, ImageGetPixel(smaller, ImageWidth(smaller)-1, ImageHeight(smaller)-1) - 1);
     printf("# Image Sublocate - Big 800x800 | Small %dx%d\n", window, window);
     InstrReset();
-    OldImageLocateSubImage(image, &px, &py, smaller);
+    ImageLocateSubImage(image, &px, &py, smaller);
     if (old_count != 0){
       new_count = PIXMEM;
       division = (long double) new_count/ (long double) old_count;
@@ -288,6 +263,8 @@ int main(int argc, char* argv[]) {
     printf("ITERS 4n/n == %f\n\n", division_iters);
     fflush(stdout);
   }
+  */
+  /*
   printf("\n----------\n\nNEW IMAGE SUBLOCATE ANALYSIS\n");
 
   printf("Analysis of bigger image size in time complexity (Bigger Image 5x5 - 1280x1280 / Smaller Image 3x3)\n");
@@ -415,8 +392,8 @@ int main(int argc, char* argv[]) {
   }
 
   
+*/
 
-//a
 
 }
 

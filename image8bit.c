@@ -61,15 +61,17 @@ struct image {
   uint8* pixel; // pixel data (a raster scan)
 };
 
+
+//declaring summation tables as global variables so that they can be used on multiple functions (altough we will only use them in 3)
 int* valuesum1 = NULL;
 int* valuesum2 = NULL;
 
 static void InitializeSum1(Image img){
-  valuesum1 = (int*) malloc(sizeof(int*) * img->height * img->width);
+  valuesum1 = (int*) malloc(sizeof(int*) * img->height * img->width); //allocating space for summation table
 }
 
 static void InitializeSum2(Image img){
-  valuesum2 = (int*) malloc(sizeof(int*) * img->height * img->width);
+  valuesum2 = (int*) malloc(sizeof(int*) * img->height * img->width); //allocating space for summation table
 }
 
 
@@ -166,8 +168,8 @@ static int check(int condition, const char* failmsg) {
 void ImageInit(void) { ///
   InstrCalibrate();
   InstrName[0] = "pixmem"; // InstrCount[0] will count pixel array acesses
-  InstrName[1] = "pixcomp"; // InstrCount[1] will count pixel array comparisons
-  InstrName[2] = "iter"; // InstrCount[2] will count any array comparisons that has to do with pixels (aka summation tables)
+  InstrName[1] = "pixcomp"; // InstrCount[1] will count pixel array comparisons (this counts summation tables)
+  InstrName[2] = "iter"; // InstrCount[2] will count any iterations made on anything (aka all iterations made under for or while loops)
   // Name other counters here...
   
 }
@@ -583,8 +585,22 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
     not only do we access values much faster, we also increase the chance of detection of a difference in the image much sooner, which in a normal image will almost always mean immediate detection of a difference.
 
     If a summation table is not available (for example, if for some reason this function has been called independently from ImageLocateSubImage) then checking every pixel is the best option, but this is only a backup.
-    Usually this function will always be called with ImageLocateSubImage
+    Usually this function will always be called with ImageLocateSubImage.
   */
+
+  //Is not supposed to ever be triggered unless this function is called alone without going through ImageLocateSubImage
+  if (valuesum1 == NULL || valuesum2 == NULL){
+    for (int xa = 0; xa<img2->width; xa++){
+      for (int ya = 0; ya<img2->height; ya++){
+        ITER++;
+        PIXCOMP++;
+        if (ImageGetPixel(img2,xa,ya) != ImageGetPixel(img1, xa+x, ya+y)){
+          return 0;
+        }
+      }
+    }
+    return 1;
+  }
 
   //iterating through the last row of the summation table.
   for(int i = 1; i < MAX(ImageWidth(img2), ImageHeight(img1)); i++){
@@ -616,6 +632,10 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   
   return 1;
 }
+/*
+Classic ImageLocateSubImage implementation
+
+
 
 int OldImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
@@ -648,6 +668,7 @@ int OldImageLocateSubImage(Image img1, int* px, int* py, Image img2) {
   }
   return 0;
 }
+*/
 
 /// Locate a subimage inside another image.
 /// Searches for img2 inside img1.
@@ -700,6 +721,8 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
       }
     }
   }
+  //We cannot reuse the summation tables for further function calls. The image could have been changed by then, or a different img2 could be used.
+  //They need to be deleted and remade every time this function is called.
   free(valuesum1);
   free(valuesum2);
   valuesum1 = NULL;
@@ -710,12 +733,16 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 
 
 
+
 /// Filtering
 
 /// Blur an image by a applying a (2dx+1)x(2dy+1) mean filter.
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
+/*
+Classic implementation of a box-blurring method.
+
 void ImageOldBlur(Image img, int dx, int dy) { 
   int sum;
   int count;
@@ -740,6 +767,7 @@ void ImageOldBlur(Image img, int dx, int dy) {
   }
   ImageDestroy(&imgaux);
 }
+*/
 
 /*
   Both ImageBlur and ImageLocateSubImage use a summation table to represent images in a different way.
@@ -789,16 +817,16 @@ void ImageBlur(Image img, int dx, int dy) {
     for (int x = 0; x < img->width; x++){
       for (int y = 0; y < img->height; y++){
         ITER++;
-        xstart = MAX(x - dx, 0);
-        ystart = MAX(y - dy, 0);
-        xend = MIN(x + dx, img->width-1);
-        yend = MIN(y + dy, img->height-1);
-        xlen = xend - xstart + 1;
+        xstart = MAX(x - dx, 0); //we don't want xstart to be a negative value
+        ystart = MAX(y - dy, 0); //we don't want ystart to be a negative value
+        xend = MIN(x + dx, img->width-1); //we don't want xend to be greater than the highest index
+        yend = MIN(y + dy, img->height-1); //we don't want yend to be greater than the highest index
+        xlen = xend - xstart + 1; 
         ylen = yend - ystart + 1;
-        count = ylen * xlen;
+        count = ylen * xlen; //calculating the number of pixels in the box (useful for situations such as pixels being in a border)
         blurval = valuesum[G(img, xend, yend)] - ((ystart > 0) ? valuesum[G(img, xend, ystart - 1)] : 0) - ((xstart > 0) ? valuesum[G(img, xstart - 1, yend)] : 0) + ((xstart > 0 && ystart > 0) ? valuesum[G(img, xstart - 1, ystart - 1)] : 0);
-        blurval = (blurval + count / 2)/count;
-        ImageSetPixel(img, x, y, blurval);
+        blurval = (blurval + count / 2)/count; //calculated this way due to rounding issues
+        ImageSetPixel(img, x, y, blurval); //only 1 iteration needed per pixel unlike the classic implementation which requires 4 at best.
       }
     }
   }
